@@ -18,4 +18,13 @@ class OZR_Const
     // Клас предмета, на якому міряємо таблицю частот. Ванільна рація --
     // єдиний ItemTransmitter, який точно є на будь-якому сервері.
     static const string BAND_PROBE_CLASS = "PersonalRadio";
+
+    // Класнейм плати рації. Знати його треба: саме цей предмет і є
+    // передавачем, який рушій бачить у гравця.
+    static const string BOARD_CLASS = "OZ_Module_Radio";
+
+    // Канали адмін описує тут. Файл лежить поруч із рештою конфігів OpenZone.
+    static const string SETTINGS       = "$profile:OpenZone\\Radio.json";
+    static const int    SCHEMA_RADIO   = 1;
+    static const int    CH_NAME_MAX    = 24;
 }

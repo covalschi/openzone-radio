@@ -65,9 +65,19 @@ class CfgVehicles
 
     // The radio board. Turns the PDA into a transceiver; without an antenna it
     // is deaf and mute, exactly like the transponder.
+    //
+    // simulation="itemTransmitter" is the ONE line that matters, and it was
+    // expensive to find. The engine picks an entity's native type from this
+    // field -- not from the config parent, and not from the script class. A
+    // board without it comes out a plain ItemBase however faithfully its
+    // script class extends TransmitterBase: measured on the stand, where the
+    // cast to a transmitter kept failing while everything else looked right,
+    // and a board the engine does not consider a transmitter carries no voice
+    // at all.
     class OZ_Module_Radio : OZ_Module_Base
     {
         scope = 2;
+        simulation = "itemTransmitter";
         displayName = "$STR_OZR_MOD_RADIO";
         descriptionShort = "$STR_OZR_MOD_RADIO_DESC";
     };
