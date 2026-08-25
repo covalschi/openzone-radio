@@ -1,0 +1,23 @@
+# Переносна половина профілю для dayz-agentic-modding-mcp.
+# Машинні шляхи живуть у dayz-mcp.local.toml, який не комітиться.
+#
+# Рація ЖОРСТКО залежить від @OpenZone_Core і @OpenZone_PDA через
+# requiredAddons: відсутність будь-якого з них -- блокуюче вікно ще до
+# завантаження, а не тихий пропуск pbo. Обидва підставляються стенду через
+# [mods] extra у локальному файлі.
+
+[project]
+name = "openzone-radio"
+
+[build]
+mods = ["OpenZone_Radio"]
+
+[expect]
+ready_line   = "radio loaded"
+max_warnings = 0
+forbid       = ["Bad type", "Can't compile", "NULL pointer to instance"]
+error_regex  = ["SCRIPT\\s+\\(E\\).*OZR_"]
+noise        = []
+
+[expect.counters]
+# Заповнюється після першого бута, коли ready-рядок існує насправді.
