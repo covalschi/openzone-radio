@@ -45,6 +45,9 @@ class OZR_Module : CF_ModuleWorld
 
         OZR_Bands.Probe();
         OZR_Settings.ServerLoad();
+        // Після проби: профілі перевіряються ПРОТИ виміряної сітки, і без неї
+        // перевіряти нічим.
+        OZR_Profiles.ServerLoad();
         OZR_Hardware.Declare();
 
         OZ_PageRegistry.Register(OZR_Const.PAGE_RADIO,

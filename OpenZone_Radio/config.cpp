@@ -91,4 +91,67 @@ class CfgVehicles
         displayName = "$STR_OZR_MOD_ANT_LONG";
         descriptionShort = "$STR_OZR_MOD_ANT_LONG_DESC";
     };
+
+    // ------------------------------------------------------------------
+    // Handheld radios that differ in one number and nothing else.
+    //
+    // `range` is the engine's OWN per-class transmission distance, in metres.
+    // Not invented here: read out of the vanilla configs, where PersonalRadio
+    // declares 5000, BaseRadio 50000 and the megaphone 200. The itemTransmitter
+    // simulation reads it, and these inherit that simulation from PersonalRadio
+    // along with the model, the battery slot and the energy manager -- so one
+    // line per class is genuinely all that changes.
+    //
+    // `inputRange[]` is deliberately left alone. That is how close you must be
+    // for the radio to pick your voice up, per voice level {whisper, talk,
+    // shout}, and moving it together with `range` would make two things change
+    // at once for no reason a player could name or notice.
+    //
+    // The reach is in the display name on purpose. Five radios on one model are
+    // otherwise indistinguishable in the hand, and a tier the player cannot see
+    // is a tier they will assume does not exist.
+    //
+    // None of these spawn as loot by themselves: natural spawning needs entries
+    // in the server's types.xml. Until then they are admin- and trader-placed.
+    class PersonalRadio;
+
+    class OZ_Radio_100m : PersonalRadio
+    {
+        scope = 2;
+        displayName = "$STR_OZR_RADIO_100";
+        descriptionShort = "$STR_OZR_RADIO_DESC";
+        range = 100;
+    };
+
+    class OZ_Radio_200m : PersonalRadio
+    {
+        scope = 2;
+        displayName = "$STR_OZR_RADIO_200";
+        descriptionShort = "$STR_OZR_RADIO_DESC";
+        range = 200;
+    };
+
+    class OZ_Radio_500m : PersonalRadio
+    {
+        scope = 2;
+        displayName = "$STR_OZR_RADIO_500";
+        descriptionShort = "$STR_OZR_RADIO_DESC";
+        range = 500;
+    };
+
+    class OZ_Radio_1000m : PersonalRadio
+    {
+        scope = 2;
+        displayName = "$STR_OZR_RADIO_1000";
+        descriptionShort = "$STR_OZR_RADIO_DESC";
+        range = 1000;
+    };
+
+    class OZ_Radio_5000m : PersonalRadio
+    {
+        scope = 2;
+        displayName = "$STR_OZR_RADIO_5000";
+        descriptionShort = "$STR_OZR_RADIO_DESC";
+        range = 5000;
+    };
 };
