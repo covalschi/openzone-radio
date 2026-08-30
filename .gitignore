@@ -4,6 +4,7 @@ keys/*.biprivatekey
 
 # build output
 build/out/
+native/build/
 @OpenZone_Core/
 @OpenZone_Radio/
 *.pbo
