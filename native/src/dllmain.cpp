@@ -186,10 +186,14 @@ static void LoadConfig()
 
     // The admin-editable copy WINS. It sits beside the rest of the mod
     // configs, so a panel that can edit those can edit this one too.
+    //
+    // The name carries its owner. That directory is shared by three mods, and
+    // a plain "Frequencies.json" was one collision away from being somebody
+    // else's -- which is exactly what happened once to "Radio.json".
     if (g_profiles[0])
     {
         _snwprintf_s(path, MAX_PATH, _TRUNCATE,
-                     L"%s\\OpenZone\\Frequencies.json", g_profiles);
+                     L"%s\\OpenZone\\OZ_Radio_Frequencies.json", g_profiles);
         got = ReadWholeFile(path, text, sizeof(text));
         if (got)
             Log("grid read from the profile: %ls", path);

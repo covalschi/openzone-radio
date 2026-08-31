@@ -37,13 +37,13 @@ class OZR_Const
     // спискові каналів КПК; зайняти його своїми полями означало б ЗАТЕРТИ
     // чужі дані на першому ж старті -- що тут одного разу й сталося, поки
     // файл називався так. Нову річ називають новим іменем.
-    static const string SETTINGS      = "$profile:OpenZone\\RadioSettings.json";
+    static const string SETTINGS      = "$profile:OpenZone\\OZ_Radio_Settings.json";
     static const int    SCHEMA_RADIO  = 1;
 
     // Профілі ручних рацій: діапазон і крок на класнейм. Окремий файл, бо це
     // окреме рішення адміна -- канали КПК і те, куди дістає ручна рація, не
     // мають нічого спільного, крім ефіру.
-    static const string PROFILES         = "$profile:OpenZone\\RadioProfiles.json";
+    static const string PROFILES         = "$profile:OpenZone\\OZ_Radio_Profiles.json";
 
     // Сітка ефіру. Пише її МОД (виводячи з профілів), читає НАТИВНИЙ ПАТЧ
     // при старті процесу -- звідси й відкладеність: новий файл діє з
@@ -52,12 +52,12 @@ class OZR_Const
     // Ім'я й розташування узгоджені з native/src/dllmain.cpp: він шукає
     // <profiles>\\OpenZone\\Frequencies.json, а копію поруч із собою лишає
     // запасною. Перейменувати тут -- значить мовчки повернутись до запасної.
-    static const string FREQUENCIES      = "$profile:OpenZone\\Frequencies.json";
+    static const string FREQUENCIES      = "$profile:OpenZone\\OZ_Radio_Frequencies.json";
     static const int    SCHEMA_PROFILES  = 1;
 
     // Куди гравець перетягнув клавіатуру. КЛІЄНТСЬКИЙ файл: $profile: на
     // клієнті -- це його власний профіль, і сервера це не стосується.
-    static const string KEYPAD_POS = "$profile:OpenZone\\RadioKeypad.json";
+    static const string KEYPAD_POS = "$profile:OpenZone\\OZ_Radio_Keypad.json";
 
     // Клавіші. Обидві оголошені у ВЛАСНОМУ inputs.xml цього мода: ручна рація
     // не модуль КПК, і позичена в сусіда клавіша зникала б разом із ним.

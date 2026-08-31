@@ -46,7 +46,7 @@ cannot be overwritten.
 
 Two places are looked at, in this order:
 
-1. `<profiles>/OpenZone/Frequencies.json` -- the `-profiles` directory named on
+1. `<profiles>/OpenZone/OZ_Radio_Frequencies.json` -- the `-profiles` directory named on
    the server's own command line. **This is normally the live one, and it is
    not written by hand:** the mod derives it from the radio profiles an admin
    edits in game (lowest band bottom, highest band top, and the greatest common
