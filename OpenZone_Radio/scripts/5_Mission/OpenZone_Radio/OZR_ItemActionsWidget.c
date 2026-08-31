@@ -27,6 +27,6 @@ modded class ItemActionsWidget
         if (!OZR_ClientGrid.For(trans.GetType()))
             return super.GetRadioFrequency();
 
-        return OZR_Fmt.MHz(OZR_ClientGrid.MHzAt(trans.GetTunedFrequencyIndex()));
+        return OZR_Fmt.MHz(OZR_ClientGrid.MHzAt(trans.OZR_ShownIndex()));
     }
 }

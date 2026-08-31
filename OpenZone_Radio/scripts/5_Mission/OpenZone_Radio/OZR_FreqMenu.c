@@ -233,7 +233,7 @@ class OZR_FreqMenu extends UIScriptedMenu
         {
             string shown = m_Typed;
             if (shown == "" && m_Radio)
-                shown = OZR_Fmt.MHz(OZR_ClientGrid.MHzAt(m_Radio.GetTunedFrequencyIndex()));
+                shown = OZR_Fmt.MHz(OZR_ClientGrid.MHzAt(m_Radio.OZR_ShownIndex()));
             m_Freq.SetText(shown);
         }
 
@@ -406,7 +406,7 @@ class OZR_FreqMenu extends UIScriptedMenu
         int hi     = OZR_ClientGrid.IndexOf(m_Profile.MaxMHz);
         int stride = OZR_Stride();
 
-        int cur = m_Radio.GetTunedFrequencyIndex();
+        int cur = m_Radio.OZR_ShownIndex();
         if (cur < lo || cur > hi)
             cur = lo;
 

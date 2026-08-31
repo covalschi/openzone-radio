@@ -235,14 +235,9 @@ class OZR_Module : CF_ModuleWorld
             return;
         }
 
-        radio.SetFrequencyByIndex(want);
-
-        // БЕЗ ЦЬОГО клієнт не дізнається про нову частоту, поки предмет не
-        // синхронізується з якоїсь іншої причини. Виміряно: підпис у HUD
-        // мінявся лише коли рацію вимкнути й увімкнути -- бо саме те й
-        // штовхало синхронізацію. Рушій ставить свій прапорець «змінилось»
-        // усередині, але мережу цим не будить.
-        radio.SetSynchDirty();
+        // Через OZR_TuneTo, а не SetFrequencyByIndex: він же й розкаже про
+        // нову частоту клієнтові. Прямий виклик лишив би її невидимою.
+        radio.OZR_TuneTo(want);
 
         OZR_Log.Dbg("tuned " + radio.GetType() + " to index " + want.ToString() + " = " + OZR_Grid.MHzAt(want).ToString() + " MHz");
     }
