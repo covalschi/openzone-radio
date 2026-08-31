@@ -35,18 +35,5 @@ class OZR_Hardware
         radio.EnablesPages.Insert(OZRP_Const.PAGE_RADIO);
         if (OZ_PdaHardware.Declare(radio))
             s_Declared++;
-
-        // Довга антена. Той самий Kind, що й у куцої антени КПК -- і в цьому
-        // весь механізм розширення: перемагає та, що оголосила більший
-        // RangeM. Жодного окремого поняття «краща антена» не потрібно.
-        OZ_ModuleSpec ant = new OZ_ModuleSpec();
-        ant.ClassName    = "OZ_Module_Antenna_Long";
-        ant.DisplayName  = "#STR_OZR_MOD_ANT_LONG";
-        ant.Kind         = OZ_PdaConst.MOD_ANTENNA;
-        ant.RangeM       = 2500;
-        ant.PowerFactor  = 1.9;
-        ant.EnablesPages = new array<string>();
-        if (OZ_PdaHardware.Declare(ant))
-            s_Declared++;
     }
 }

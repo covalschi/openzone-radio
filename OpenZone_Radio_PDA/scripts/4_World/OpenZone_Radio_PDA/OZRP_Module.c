@@ -7,11 +7,12 @@
 // Що саме тут робиться:
 //   1. рівень діагностики зводиться до ядерного -- один вимикач на всю родину,
 //      коли родина взагалі стоїть;
-//   2. читаються канали (це поняття КПК, не рації);
-//   3. плата й довга антена оголошуються в договорі заліза КПК;
-//   4. реєструється сторінка «Рація»;
-//   5. вмикається звірка живлення, щоб приймач тримався в тон КПК;
-//   6. підписується слухач PTT, який веде плату.
+//   2. плата оголошується модулем відсіку в договорі заліза КПК;
+//   3. реєструється сторінка «Рація»;
+//   4. вмикається звірка живлення, щоб плата тримала прийом у тон КПК.
+//
+// PTT тут немає: плата -- звичайна профільна рація, і спільний обхід у моді
+// рації відкриває її разом із рештою, хоч вона й лежить усередині КПК.
 //
 // Порядок значущий рівно в одному місці: діагностика ставиться першою, щоб
 // рядки нижче вже на неї зважали.
@@ -45,9 +46,6 @@ class OZRP_Module : CF_ModuleWorld
         // без ядра; коли ядро є -- воно й вирішує.
         OZR_Log.SetDebug(OZ_Log.IsDebug());
 
-        OZR_ChannelCfg.ServerLoad();
-        OZRP_AdminCfg.Declare();
-
         OZR_Hardware.Declare();
 
         OZ_PageRegistry.Register(OZRP_Const.PAGE_RADIO,
@@ -58,20 +56,7 @@ class OZRP_Module : CF_ModuleWorld
         m_SyncTimer = new Timer(CALL_CATEGORY_SYSTEM);
         m_SyncTimer.Run(SYNC_INTERVAL, this, "SyncTick", NULL, true);
 
-        OZR_ChannelCfg cfg = OZR_ChannelCfg.Get();
-        int channels = 0;
-        if (cfg && cfg.Channels)
-            channels = cfg.Channels.Count();
-
-        string summary = "radio in the pda: channels=" + channels.ToString();
-        summary += " modules=" + OZR_Hardware.Count().ToString();
-        OZR_Log.Info(summary);
-
-        // Нуль -- не поломка, а порожній перелік, який нікому не належить,
-        // крім адміна. Кажемо, ДЕ його заповнювати: інакше «channels=0»
-        // читається як несправність.
-        if (channels == 0)
-            OZR_Log.Info("no radio channels described - name them in " + OZRP_Const.CHANNELS + " or in the admin console; the page shows what you put there");
+        OZR_Log.Info("radio in the pda: modules=" + OZR_Hardware.Count().ToString());
     }
 
     override void OnMissionFinish(Class sender, CF_EventArgs args)

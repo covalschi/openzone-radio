@@ -70,6 +70,10 @@ class CfgVehicles
     {
         scope = 2;
         simulation = "itemTransmitter";
+        // ВЛАСНА дальність, як у будь-якої рації. Раніше її давав окремий
+        // модуль антени в сусідньому відсіку -- поняття, якого в рації немає:
+        // антена не річ, яку носять окремо від передавача.
+        range = 2500;
         displayName = "$STR_OZR_MOD_RADIO";
         descriptionShort = "$STR_OZR_MOD_RADIO_DESC";
     };
@@ -77,12 +81,6 @@ class CfgVehicles
     // Long antenna. Same Kind as the PDA's own stub, only a bigger RangeM --
     // that is the whole extension mechanism: whichever antenna declares the
     // larger range wins.
-    class OZ_Module_Antenna_Long : OZ_Module_Base
-    {
-        scope = 2;
-        displayName = "$STR_OZR_MOD_ANT_LONG";
-        descriptionShort = "$STR_OZR_MOD_ANT_LONG_DESC";
-    };
 
     // ------------------------------------------------------------------
     // Handheld radios that differ in one number and nothing else.

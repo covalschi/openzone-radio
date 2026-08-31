@@ -44,45 +44,24 @@ class OZR_Set
 
     // Найдальша антена з усіх вставлених. Те саме правило, що й у карти:
     // перемагає та, що оголосила більший RangeM.
-    static float AntennaRange(OZ_PDA_Base pda)
+    // Дальність плати -- з ЇЇ ВЛАСНОГО конфіга, як у будь-якої рації.
+    //
+    // Окремого модуля антени більше немає, і зникнення це не втрата, а
+    // виправлення поняття: плата -- це рація, а антена в рації не окрема річ,
+    // яку носять у сусідньому відсіку. Хто хоче дістати далі -- ставить іншу
+    // плату, рівно як інший гравець бере іншу ручну рацію.
+    static float RangeOf(OZ_Module_Radio board)
     {
-        if (!pda)
+        if (!board)
             return 0;
 
-        float best = 0;
+        string path = "CfgVehicles " + board.GetType() + " range";
+        if (!GetGame().ConfigIsExisting(path))
+            return 0;
 
-        for (int i = 0; i < OZ_PdaConst.MODULE_SLOTS_MAX; i++)
-        {
-            string cls = pda.OZ_ModuleClass(i);
-            if (cls == "")
-                continue;
-
-            OZ_ModuleSpec spec = OZ_PdaHardware.ModuleFor(cls);
-            if (!spec || spec.Kind != OZ_PdaConst.MOD_ANTENNA)
-                continue;
-
-            if (spec.RangeM > best)
-                best = spec.RangeM;
-        }
-        return best;
+        return GetGame().ConfigGetFloat(path);
     }
 
-    // Чи пустить фракція. Канал без фракції -- для всіх.
-    static bool Allowed(string uid, OZR_Channel c)
-    {
-        if (!c)
-            return false;
-        if (c.Faction == "")
-            return true;
-
-        OZ_PlayerData d = OZ_PlayerStore.Load(uid);
-        return d && d.Faction == c.Faction;
-    }
-
-    // Живлення й прийом тримаємо в тон КПК, і робимо це ПОЗА сторінкою.
-    //
-    // Інакше рація починала б чути лише після того, як хтось відкрив вкладку
-    // -- а рація, яка мовчить, поки на неї не подивишся, це не рація.
     static void Sync()
     {
         array<Man> players = new array<Man>();
@@ -102,9 +81,10 @@ class OZR_Set
             if (!board)
                 continue;
 
-            // Без антени плата не чує нікого: те саме правило, що й у
-            // транспондера, і воно ж робить довгу антену вартою відсіку.
-            bool live = pda.OZ_IsOn() && AntennaRange(pda) > 0;
+            // Живлення плати -- живлення КПК, і більше нічого: своєї батареї
+            // в неї немає, а дальність тепер її власна й від відсіків не
+            // залежить.
+            bool live = pda.OZ_IsOn();
             board.OZR_Wake(live);
         }
     }
