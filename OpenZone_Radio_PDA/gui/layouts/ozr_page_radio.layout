@@ -1,14 +1,16 @@
-// Сторінка «Рація»: стан плати ліворуч, настройка праворуч.
+// Сторінка «Рація»: стан і книжка ліворуч, настройка праворуч.
 //
 // ЗГЕНЕРОВАНО scratchpad/pagelayout.py -- правити генератор, не це.
 //
-// Списку каналів тут більше немає: плата налаштовується числом, як і будь-яка
-// рація. Різниця з ручною лишається ігрова -- щоб перебудувати цю, треба
-// відкрити КПК.
+// Списку каналів тут немає: плата налаштовується числом, як і будь-яка
+// рація. А книжка частот -- це імена, які дав САМ ГРАВЕЦЬ, і живуть вони на
+// носії, а не в конфігу сервера: їх можна загубити разом із дискетою.
+//
+// Різниця з ручною рацією лишається ігрова: щоб перебудувати цю, треба
+// відкрити КПК. На бігу не вийде.
 //
 // Кладеться скриптом у PageHost меню (1045x414 одиниць розмітки).
-// Імена читає OZR_PageRadio.c: StatusText, FreqText, BandText, FreqEdit,
-// BtnTune/BtnTuneText, BtnUp/BtnUpText, BtnDown/BtnDownText.
+// Імена читає OZR_PageRadio.c.
 
 FrameWidgetClass OZ_PageRadio {
  visible 1
@@ -21,8 +23,8 @@ FrameWidgetClass OZ_PageRadio {
  {
   TextWidgetClass StatusLbl {
    visible 1
-   position 16 16
-   size 200 26
+   position 16 10
+   size 240 24
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -31,14 +33,14 @@ FrameWidgetClass OZ_PageRadio {
    text "STATUS"
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
-   "exact text size" 14
+   "exact text size" 13
    color 0.545 0.561 0.596 1
    priority 3
   }
   TextWidgetClass StatusText {
    visible 1
-   position 16 44
-   size 480 26
+   position 16 32
+   size 480 24
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -47,14 +49,14 @@ FrameWidgetClass OZ_PageRadio {
    text "---"
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
-   "exact text size" 22
+   "exact text size" 18
    color 0.788 0.788 0.816 1
    priority 3
   }
   TextWidgetClass FreqLbl {
    visible 1
-   position 16 104
-   size 200 26
+   position 16 70
+   size 240 24
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -63,14 +65,14 @@ FrameWidgetClass OZ_PageRadio {
    text "TUNED TO"
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
-   "exact text size" 14
+   "exact text size" 13
    color 0.545 0.561 0.596 1
    priority 3
   }
   TextWidgetClass FreqText {
    visible 1
-   position 16 132
-   size 480 46
+   position 16 92
+   size 480 40
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -79,14 +81,14 @@ FrameWidgetClass OZ_PageRadio {
    text "---"
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
-   "exact text size" 34
+   "exact text size" 30
    color 1 0.478 0.102 1
    priority 3
   }
   TextWidgetClass BandLbl {
    visible 1
-   position 16 200
-   size 200 26
+   position 16 140
+   size 320 24
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -95,14 +97,14 @@ FrameWidgetClass OZ_PageRadio {
    text "BAND / STEP / REACH"
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
-   "exact text size" 14
+   "exact text size" 13
    color 0.545 0.561 0.596 1
    priority 3
   }
   TextWidgetClass BandText {
    visible 1
-   position 16 228
-   size 480 26
+   position 16 162
+   size 480 24
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -111,14 +113,65 @@ FrameWidgetClass OZ_PageRadio {
    text "---"
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
-   "exact text size" 16
+   "exact text size" 15
    color 0.788 0.788 0.816 1
    priority 3
   }
+  TextWidgetClass BookLbl {
+   visible 1
+   position 16 200
+   size 320 24
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   ignorepointer 1
+   text "SAVED ON THE CARRIER"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 13
+   color 0.545 0.561 0.596 1
+   priority 3
+  }
+  TextWidgetClass BookFree {
+   visible 1
+   position 340 200
+   size 160 24
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   ignorepointer 1
+   text ""
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 13
+   color 0.545 0.561 0.596 1
+   priority 3
+  }
+  TextListboxWidgetClass BookList {
+   visible 1
+   position 16 224
+   size 484 172
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style NoScrollBar
+   "title visible" 0
+   "highlight row" 1
+   colums "text;100;"
+   lines 7
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 15
+   color 0.788 0.788 0.816 1
+   priority 2
+  }
   TextWidgetClass SetLbl {
    visible 1
-   position 560 16
-   size 460 26
+   position 560 10
+   size 460 24
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -127,14 +180,14 @@ FrameWidgetClass OZ_PageRadio {
    text "SET A FREQUENCY"
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
-   "exact text size" 14
+   "exact text size" 13
    color 0.545 0.561 0.596 1
    priority 3
   }
   EditBoxWidgetClass FreqEdit {
    visible 1
-   position 560 48
-   size 300 40
+   position 560 32
+   size 300 38
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -147,8 +200,8 @@ FrameWidgetClass OZ_PageRadio {
   }
   TextWidgetClass FreqUnit {
    visible 1
-   position 872 56
-   size 120 26
+   position 872 40
+   size 120 24
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -157,13 +210,13 @@ FrameWidgetClass OZ_PageRadio {
    text "MHz"
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
-   "exact text size" 18
+   "exact text size" 16
    color 0.545 0.561 0.596 1
    priority 3
   }
   ButtonWidgetClass BtnTune {
    visible 1
-   position 560 104
+   position 560 82
    size 300 34
    hexactpos 1
    vexactpos 1
@@ -206,7 +259,7 @@ FrameWidgetClass OZ_PageRadio {
   }
   ButtonWidgetClass BtnDown {
    visible 1
-   position 560 152
+   position 560 126
    size 145 34
    hexactpos 1
    vexactpos 1
@@ -249,7 +302,7 @@ FrameWidgetClass OZ_PageRadio {
   }
   ButtonWidgetClass BtnUp {
    visible 1
-   position 715 152
+   position 715 126
    size 145 34
    hexactpos 1
    vexactpos 1
@@ -290,19 +343,135 @@ FrameWidgetClass OZ_PageRadio {
     }
    }
   }
-  TextWidgetClass HintText {
+  TextWidgetClass NameLbl {
    visible 1
-   position 560 208
-   size 460 26
+   position 560 184
+   size 460 24
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
    ignorepointer 1
-   text "the set has to be open to retune - not on the move"
+   text "NAME THIS FREQUENCY"
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
-   "exact text size" 14
+   "exact text size" 13
+   color 0.545 0.561 0.596 1
+   priority 3
+  }
+  EditBoxWidgetClass NameEdit {
+   visible 1
+   position 560 206
+   size 300 38
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.788 0.788 0.816 1
+   text ""
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   priority 2
+  }
+  ButtonWidgetClass BtnSave {
+   visible 1
+   position 560 256
+   size 145 34
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   priority 2
+   {
+    PanelWidgetClass BtnSaveBg {
+     visible 1
+     position 0 0
+     size 145 34
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     ignorepointer 1
+     color 0.2 0.35 0.24 1
+     priority 3
+     style rover_sim_colorable
+    }
+    TextWidgetClass BtnSaveText {
+     visible 1
+     position 0 6
+     size 145 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     ignorepointer 1
+     text ""
+     font "gui/fonts/sdf_MetronBook24"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     color 0.788 0.788 0.816 1
+     priority 4
+    }
+   }
+  }
+  ButtonWidgetClass BtnForget {
+   visible 1
+   position 715 256
+   size 145 34
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   priority 2
+   {
+    PanelWidgetClass BtnForgetBg {
+     visible 1
+     position 0 0
+     size 145 34
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     ignorepointer 1
+     color 0.42 0.22 0.2 1
+     priority 3
+     style rover_sim_colorable
+    }
+    TextWidgetClass BtnForgetText {
+     visible 1
+     position 0 6
+     size 145 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     ignorepointer 1
+     text ""
+     font "gui/fonts/sdf_MetronBook24"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     color 0.788 0.788 0.816 1
+     priority 4
+    }
+   }
+  }
+  TextWidgetClass HintText {
+   visible 1
+   position 560 306
+   size 460 24
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   ignorepointer 1
+   text "pick a saved one on the left to tune to it"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 13
    color 0.451 0.463 0.494 1
    priority 3
   }

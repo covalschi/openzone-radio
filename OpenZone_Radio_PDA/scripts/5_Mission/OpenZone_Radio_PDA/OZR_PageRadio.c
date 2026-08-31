@@ -6,15 +6,27 @@
 // поки частот було вісім; після зняття межі ефір міряється тисячами ділень, і
 // список імен, яких ніхто не давав, показував би те, чого немає.
 //
+// Імена лишились, але тепер їх дає САМ ГРАВЕЦЬ, і живуть вони на носії в КПК.
+// Книжку можна загубити з дискетою, зняти з тіла, переписати товаришу -- тобто
+// ім'я частоти стало предметом, а не рядком у конфігу сервера.
+//
 // Різниця з ручною рацією лишається одна, і вона ігрова: щоб перебудувати цю,
 // треба ВІДКРИТИ КПК. На бігу не вийде.
 
 class OZR_PageRadio : OZ_PdaPage
 {
-    private EditBoxWidget m_Freq;
-    private ButtonWidget  m_BtnTune;
-    private ButtonWidget  m_BtnUp;
-    private ButtonWidget  m_BtnDown;
+    private EditBoxWidget     m_Freq;
+    private EditBoxWidget     m_Name;
+    private TextListboxWidget m_Book;
+    private ButtonWidget      m_BtnTune;
+    private ButtonWidget      m_BtnUp;
+    private ButtonWidget      m_BtnDown;
+    private ButtonWidget      m_BtnSave;
+    private ButtonWidget      m_BtnForget;
+
+    // Рядок, на який гравець НАЦІЛИВСЯ. Перемальовування списку скидає його,
+    // бо після оновлення це вже інший рядок.
+    private int m_Picked = -1;
 
     private ref OZR_RadioState m_State;
 
@@ -25,14 +37,20 @@ class OZR_PageRadio : OZ_PdaPage
 
     override void OnBuilt()
     {
-        m_Freq    = EditBoxWidget.Cast(Wgt("FreqEdit"));
-        m_BtnTune = ButtonWidget.Cast(Wgt("BtnTune"));
-        m_BtnUp   = ButtonWidget.Cast(Wgt("BtnUp"));
-        m_BtnDown = ButtonWidget.Cast(Wgt("BtnDown"));
+        m_Freq      = EditBoxWidget.Cast(Wgt("FreqEdit"));
+        m_Name      = EditBoxWidget.Cast(Wgt("NameEdit"));
+        m_Book      = TextListboxWidget.Cast(Wgt("BookList"));
+        m_BtnTune   = ButtonWidget.Cast(Wgt("BtnTune"));
+        m_BtnUp     = ButtonWidget.Cast(Wgt("BtnUp"));
+        m_BtnDown   = ButtonWidget.Cast(Wgt("BtnDown"));
+        m_BtnSave   = ButtonWidget.Cast(Wgt("BtnSave"));
+        m_BtnForget = ButtonWidget.Cast(Wgt("BtnForget"));
 
-        SetText("BtnTuneText", "#STR_OZR_TUNE");
-        SetText("BtnUpText",   "+");
-        SetText("BtnDownText", "-");
+        SetText("BtnTuneText",   "#STR_OZR_TUNE");
+        SetText("BtnUpText",     "+");
+        SetText("BtnDownText",   "-");
+        SetText("BtnSaveText",   "#STR_OZR_SAVE");
+        SetText("BtnForgetText", "#STR_OZR_FORGET");
     }
 
     override void OnSelected()
@@ -72,6 +90,18 @@ class OZR_PageRadio : OZ_PdaPage
             return true;
         }
 
+        if (w == m_BtnSave)
+        {
+            Remember();
+            return true;
+        }
+
+        if (w == m_BtnForget)
+        {
+            Forget();
+            return true;
+        }
+
         return false;
     }
 
@@ -95,13 +125,33 @@ class OZR_PageRadio : OZ_PdaPage
             return;
         }
 
-        if (op == "tune")
+        if (op == "tune" || op == "save" || op == "forget")
         {
             if (ok)
                 Ask();
             else
                 Hint(error);
         }
+    }
+
+    // Вибір рядка книжки ОДРАЗУ настроює: книжка й існує для того, щоб не
+    // набирати число руками. Друга дія («вибрав, тепер тисни») тут була б
+    // роботою без приросту сенсу.
+    override bool OnPageItemSelected(Widget w, int row)
+    {
+        if (!m_Book || w != m_Book)
+            return false;
+
+        m_Picked = row;
+        if (m_State && row >= 0 && row < m_State.Book.Count())
+        {
+            // Прямо у віджет: SetText базової сторінки вміє лише TextWidget,
+            // а поле вводу -- інший клас.
+            if (m_Name)
+                m_Name.SetText(m_State.Book[row].Name);
+            Tune(m_State.Book[row].Index);
+        }
+        return true;
     }
 
     // ------------------------------------------------------------- дії
@@ -197,6 +247,74 @@ class OZR_PageRadio : OZ_PdaPage
         band += " / " + OZR_Fmt.Step(m_State.StepMHz);
         band += "   " + Math.Round(m_State.RangeM).ToString() + " m";
         SetText("BandText", band);
+
+        PaintBook();
+    }
+
+    // ------------------------------------------------------------ книжка
+
+    private void Remember()
+    {
+        if (!m_Name)
+            return;
+
+        OZR_BookRef r = new OZR_BookRef();
+        r.Name = m_Name.GetText();
+
+        string json;
+        string err;
+        if (JsonFileLoader<OZR_BookRef>.MakeData(r, json, err, false))
+            OZ_Rpc.Request(OZRP_Const.PAGE_RADIO, "save", json);
+    }
+
+    private void Forget()
+    {
+        if (!m_State || m_Picked < 0 || m_Picked >= m_State.Book.Count())
+        {
+            Hint("STR_OZR_ERR_PICK_ONE");
+            return;
+        }
+
+        OZR_BookRef r = new OZR_BookRef();
+        r.Name = m_State.Book[m_Picked].Name;
+
+        string json;
+        string err;
+        if (JsonFileLoader<OZR_BookRef>.MakeData(r, json, err, false))
+            OZ_Rpc.Request(OZRP_Const.PAGE_RADIO, "forget", json);
+    }
+
+    private void PaintBook()
+    {
+        if (!m_Book || !m_State)
+            return;
+
+        m_Book.ClearItems();
+        m_Picked = -1;
+
+        if (!m_State.HasCarrier)
+        {
+            SetText("BookFree", "#STR_OZR_NO_CARRIER");
+            return;
+        }
+
+        for (int i = 0; i < m_State.Book.Count(); i++)
+        {
+            OZR_FreqEntry e = m_State.Book[i];
+
+            // Частоту рахуємо з ділення сіткою, яку прислав сервер: у книжці
+            // лежить позиція, а не число, і після зміни ефіру та сама позиція
+            // -- інша частота. Показуємо те, що буде НАСПРАВДІ.
+            string line = e.Name;
+            if (OZR_ClientGrid.Ready())
+                line += "   " + OZR_Fmt.MHz(OZR_ClientGrid.MHzAt(e.Index));
+            m_Book.AddItem(line, NULL, 0);
+        }
+
+        if (m_State.FreeSlots >= 0)
+            SetText("BookFree", m_State.FreeSlots.ToString() + " free");
+        else
+            SetText("BookFree", "");
     }
 
     private void Hint(string key)

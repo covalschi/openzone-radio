@@ -32,6 +32,17 @@ class OZR_RadioState
     float MinMHz   = 0;
     float MaxMHz   = 0;
     float StepMHz  = 0;
+
+    // Книжка частот із носія. Порожньо буває з двох різних причин -- носія
+    // немає або він порожній, -- і сторінка розрізняє їх за HasCarrier.
+    bool  HasCarrier = false;
+    int   FreeSlots  = -1;
+    ref array<ref OZR_FreqEntry> Book;
+
+    void OZR_RadioState()
+    {
+        Book = new array<ref OZR_FreqEntry>();
+    }
 }
 
 // Куди настроїти. Ділення, а не ім'я.
