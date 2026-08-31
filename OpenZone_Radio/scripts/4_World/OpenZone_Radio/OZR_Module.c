@@ -203,6 +203,12 @@ class OZR_Module : CF_ModuleWorld
             return;
         }
 
+        if (!radio.OZR_IsPowered())
+        {
+            OZR_Log.Dbg("tune refused: the radio is switched off");
+            return;
+        }
+
         OZR_RadioProfile prof = OZR_Profiles.For(radio.GetType());
         if (!prof || !OZR_Grid.Ready())
         {

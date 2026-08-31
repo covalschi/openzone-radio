@@ -60,6 +60,22 @@ modded class TransmitterBase
         return GetTunedFrequencyIndex();
     }
 
+    // Чи рація ЖИВА -- увімкнена й живиться. Вимкнена рація не крутиться:
+    // ручка на мертвій коробці не має що зрушити, і показувати клавіатуру для
+    // неї теж нема сенсу.
+    //
+    // Питаємо енергоменеджер, а не IsReceiving: приймання вмикається у
+    // OnWorkStart, тобто вже НАСЛІДОК живлення, і на клієнті воно може
+    // відставати. IsWorking -- це саме «увімкнена й має чим працювати».
+    bool OZR_IsPowered()
+    {
+        ComponentEnergyManager em = GetCompEM();
+        if (em)
+            return em.IsWorking();
+
+        return IsReceiving() || IsBroadcasting();
+    }
+
     // Крок профілю в діленнях сітки. Одиниця -- найдрібніше, що буває.
     private int OZR_Stride(OZR_RadioProfile p)
     {
@@ -99,6 +115,10 @@ modded class TransmitterBase
 
     override void SetNextFrequency(PlayerBase player = NULL)
     {
+        // Вимкнену рацію не крутимо взагалі -- ні нашу, ні ванільну.
+        if (!OZR_IsPowered())
+            return;
+
         OZR_RadioProfile p = OZR_Profiles.For(GetType());
 
         // Не наша рація, або сітка не годиться для профілів (непропатчений

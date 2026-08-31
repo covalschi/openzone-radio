@@ -220,6 +220,11 @@ class OZR_FreqMenu extends UIScriptedMenu
         if (!t)
             return false;
 
+        // Вимкнена рація нічого не вміє, і клавіатура над нею -- обіцянка,
+        // якої ніхто не виконає.
+        if (!t.OZR_IsPowered())
+            return false;
+
         return OZR_ClientGrid.For(t.GetType()) != null;
     }
 
@@ -358,8 +363,17 @@ class OZR_FreqMenu extends UIScriptedMenu
     // ще раз -- клієнтові тут не вірять, і правильно.
     private void Commit()
     {
-        if (!m_Radio || !m_Profile || m_Typed == "")
+        if (!m_Radio || !m_Profile)
+        {
+            OZR_Log.Dbg("freq keypad: commit ignored - no radio or no profile");
             return;
+        }
+
+        if (m_Typed == "")
+        {
+            OZR_Log.Dbg("freq keypad: commit ignored - nothing typed");
+            return;
+        }
 
         float mhz = m_Typed.ToFloat();
         int   idx = OZR_ClientGrid.IndexOf(mhz);
@@ -369,6 +383,7 @@ class OZR_FreqMenu extends UIScriptedMenu
 
         if (idx < lo || idx > hi)
         {
+            OZR_Log.Dbg("freq keypad: commit refused - " + m_Typed + " is outside this set's band");
             m_Typed = "";
             if (m_Hint)
                 m_Hint.SetText("#STR_OZR_KEYPAD_OUT");
@@ -394,6 +409,7 @@ class OZR_FreqMenu extends UIScriptedMenu
         // домальовувати очікуване значення означало б показати те, чого ще
         // немає -- а на відмову сервера воно й не з'явиться.
         m_Typed = "";
+        OZR_Log.Dbg("freq keypad: commit done, closing");
         Close();
     }
 
@@ -463,6 +479,15 @@ class OZR_FreqMenu extends UIScriptedMenu
         if (m_Since < 0.25)
             return;
         m_Since = 0;
+
+        // Рацію могли вимкнути або прибрати з рук, поки вікно відкрите.
+        // Клавіатура над мертвою коробкою нічого не значить.
+        if (!m_Radio || !m_Radio.OZR_IsPowered())
+        {
+            OZR_Log.Dbg("freq keypad: the radio is gone or switched off, closing");
+            Close();
+            return;
+        }
 
         if (m_Typed == "")
             Paint();
