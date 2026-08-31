@@ -149,7 +149,7 @@ PanelWidgetClass Card {
    visible 1
    ignorepointer 1
    position 16 42
-   size 308 54
+   size 256 54
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -161,6 +161,92 @@ PanelWidgetClass Card {
    "text halign" left
    "text valign" center
    color 0.918 0.749 0.216 1
+   priority 3
+  }
+  PanelWidgetClass BtnUpBg {
+   visible 1
+   ignorepointer 1
+   position 280 42
+   size 44 26
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.153 0.165 0.192 1
+   style rover_sim_colorable
+   priority 1
+  }
+  ButtonWidgetClass BtnUp {
+   visible 1
+   position 280 42
+   size 44 26
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   color 1 1 1 0
+   priority 2
+  }
+  TextWidgetClass BtnUpLabel {
+   visible 1
+   ignorepointer 1
+   position 280 44
+   size 44 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "+"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 20
+   "text halign" center
+   "text valign" center
+   color 0.902 0.902 0.918 1
+   priority 3
+  }
+  PanelWidgetClass BtnDownBg {
+   visible 1
+   ignorepointer 1
+   position 280 70
+   size 44 26
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.153 0.165 0.192 1
+   style rover_sim_colorable
+   priority 1
+  }
+  ButtonWidgetClass BtnDown {
+   visible 1
+   position 280 70
+   size 44 26
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   color 1 1 1 0
+   priority 2
+  }
+  TextWidgetClass BtnDownLabel {
+   visible 1
+   ignorepointer 1
+   position 280 72
+   size 44 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "-"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 20
+   "text halign" center
+   "text valign" center
+   color 0.902 0.902 0.918 1
    priority 3
   }
   TextWidgetClass BandText {

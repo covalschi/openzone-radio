@@ -20,6 +20,7 @@ class OZR_FreqMenu extends UIScriptedMenu
     // Набране гравцем, як рядок: «145.1» -- це стан набору, а не число.
     // Числом воно стає лише в мить підтвердження.
     private string m_Typed = "";
+    private float  m_Since = 0;
 
     private TransmitterBase m_Radio;
     private ref OZR_RadioProfile m_Profile;
@@ -54,7 +55,17 @@ class OZR_FreqMenu extends UIScriptedMenu
         super.OnShow();
 
         OZR_Log.Dbg("freq keypad: shown");
-        GetGame().GetUIManager().ShowUICursor(true);
+
+        // LockControls -- це і є «забрати мишу». База вміє це сама (див.
+        // UIScriptedMenu.LockControls: ChangeGameFocus(1, INPUT_DEVICE_MOUSE)
+        // плюс ShowUICursor), але САМА НЕ КЛИЧЕ -- меню мусить покликати.
+        // Без цього курсор не з'являється й клікати нема чим; спіймано тим,
+        // що автотест бив по обробнику напряму й миші не торкався зовсім.
+        //
+        // Клавіатуру не чіпаємо: UseKeyboard() лишається false, тож
+        // ChangeGameFocus для неї не викликається, і біг живий.
+        LockControls();
+
         Centre();
         Grab();
         Paint();
@@ -63,7 +74,7 @@ class OZR_FreqMenu extends UIScriptedMenu
     override void OnHide()
     {
         super.OnHide();
-        GetGame().GetUIManager().ShowUICursor(false);
+        UnlockControls();
 
         // Кажемо опитувачу самі: FindMenu(MENU_FREQ) це меню не бачить, тож
         // питати менеджера, чи ми ще відкриті, марно.
@@ -174,9 +185,25 @@ class OZR_FreqMenu extends UIScriptedMenu
             return true;
         }
 
+        if (name == "BtnUp")
+        {
+            Step(1);
+            return true;
+        }
+
+        if (name == "BtnDown")
+        {
+            Step(-1);
+            return true;
+        }
+
+        // BACKSPACE, а не «стерти все». Промахнувся однією цифрою -- втрачати
+        // через це весь набір безглуздо, а очистити можна й затиснувши.
         if (name == "BtnClear")
         {
-            m_Typed = "";
+            int n = m_Typed.Length();
+            if (n > 0)
+                m_Typed = m_Typed.Substring(0, n - 1);
             Paint();
             return true;
         }
@@ -237,8 +264,7 @@ class OZR_FreqMenu extends UIScriptedMenu
         if (idx > hi)
             idx = hi;
 
-        GetRPCManager().SendRPC(OZ_Const.MOD, OZR_Const.RPC_TUNE, new Param1<int>(idx), true);
-        OZR_Log.Dbg("freq keypad: asked for index " + idx.ToString() + " (" + OZR_Fmt.MHz(OZR_ClientGrid.MHzAt(idx)) + ")");
+        Send(idx);
 
         // Закриваємось одразу. Показати «нову» частоту тут однаково нічим:
         // індекс на клієнті оновиться лише коли сервер його поверне, і
@@ -246,6 +272,61 @@ class OZR_FreqMenu extends UIScriptedMenu
         // немає -- а на відмову сервера воно й не з'явиться.
         m_Typed = "";
         Close();
+    }
+
+    private void Send(int idx)
+    {
+        GetRPCManager().SendRPC(OZ_Const.MOD, OZR_Const.RPC_TUNE, new Param1<int>(idx), true);
+        OZR_Log.Dbg("freq keypad: asked for index " + idx.ToString() + " (" + OZR_Fmt.MHz(OZR_ClientGrid.MHzAt(idx)) + ")");
+    }
+
+    // Крок на один СВІЙ канал, по колу відрізка. Набирати частоту цілком
+    // заради сусіднього каналу безглуздо, а що таке «сусідній», профіль уже
+    // знає.
+    private void Step(int dir)
+    {
+        if (!m_Radio || !m_Profile)
+            return;
+
+        int lo     = OZR_ClientGrid.IndexOf(m_Profile.MinMHz);
+        int hi     = OZR_ClientGrid.IndexOf(m_Profile.MaxMHz);
+        int stride = OZR_Stride();
+
+        int cur = m_Radio.GetTunedFrequencyIndex();
+        if (cur < lo || cur > hi)
+            cur = lo;
+
+        // Спершу прилипаємо до ґратки профілю, потім крокуємо: рація могла
+        // стояти між своїми каналами, якщо профіль щойно змінили.
+        float rel = cur - lo;
+        float st  = stride;
+        int   k   = Math.Round(rel / st) + dir;
+
+        int last = (hi - lo) / stride;
+        if (k < 0)
+            k = last;
+        if (k > last)
+            k = 0;
+
+        m_Typed = "";
+        Send(lo + k * stride);
+    }
+
+    // Малюємо те, що СПРАВДІ на рації, а не те, що попросили: сервер може
+    // відмовити, і домальоване очікування було б брехнею. Відповідь приходить
+    // із мережею, тож перемальовуємо за часом, а не за кліком -- і лише коли
+    // гравець нічого не набирає, інакше набір затиралося б.
+    override void Update(float timeslice)
+    {
+        super.Update(timeslice);
+
+        m_Since = m_Since + timeslice;
+        if (m_Since < 0.25)
+            return;
+        m_Since = 0;
+
+        if (m_Typed == "")
+            Paint();
     }
 
     private int OZR_Stride()
