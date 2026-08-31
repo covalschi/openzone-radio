@@ -102,7 +102,11 @@ class OZR_FreqMenu extends UIScriptedMenu
         super.OnHide();
 
         m_Dragging = false;
-        GetGame().GetMission().RemoveActiveInputExcludes(Excludes(), true);
+        // БЕЗ true. Другий аргумент форсує скидання вводу, і затиснута W
+        // губиться -- персонаж зупиняється рівно в мить закриття вікна.
+        // Ваніль і КПК ставлять true, бо їм байдуже: вони й так знерухомили
+        // гравця. Нам не байдуже, у цьому вся суть цього меню.
+        GetGame().GetMission().RemoveActiveInputExcludes(Excludes(), false);
         UnlockControls();
 
         // Кажемо опитувачу самі: FindMenu(MENU_FREQ) це меню не бачить, тож
@@ -283,6 +287,11 @@ class OZR_FreqMenu extends UIScriptedMenu
 
         string name = w.GetName();
 
+        // Тимчасова діагностика: чи доходить клік і під яким іменем. Оглядом
+        // розкладки й обробника причину знайти не вдалося, а здогадуватись
+        // удруге про те саме -- марна трата вечора.
+        OZR_Log.Dbg("freq keypad: click on \"" + name + "\"");
+
         // Закриття мусить жити ВСЕРЕДИНІ меню. Клавіша-перемикач цього не
         // може: поки меню відкрите, DayZ глушить інпути, і та сама клавіша
         // більше не спрацьовує -- перевірено на стенді, разом із Back на
@@ -301,13 +310,13 @@ class OZR_FreqMenu extends UIScriptedMenu
 
         if (name == "BtnUp")
         {
-            Step(1);
+            Nudge(1);
             return true;
         }
 
         if (name == "BtnDown")
         {
-            Step(-1);
+            Nudge(-1);
             return true;
         }
 
@@ -397,7 +406,7 @@ class OZR_FreqMenu extends UIScriptedMenu
     // Крок на один СВІЙ канал, по колу відрізка. Набирати частоту цілком
     // заради сусіднього каналу безглуздо, а що таке «сусідній», профіль уже
     // знає.
-    private void Step(int dir)
+    private void Nudge(int dir)
     {
         if (!m_Radio || !m_Profile)
             return;
@@ -421,6 +430,12 @@ class OZR_FreqMenu extends UIScriptedMenu
             k = last;
         if (k > last)
             k = 0;
+
+        string dbg = "freq keypad: step " + dir.ToString();
+        dbg += " cur=" + cur.ToString() + " lo=" + lo.ToString() + " hi=" + hi.ToString();
+        dbg += " stride=" + stride.ToString() + " k=" + k.ToString();
+        dbg += " -> " + (lo + k * stride).ToString();
+        OZR_Log.Dbg(dbg);
 
         m_Typed = "";
         Send(lo + k * stride);

@@ -46,11 +46,34 @@ class OZR_FreqInput
 
     static void Poll()
     {
-        if (!s_Key || s_Menu)
+        if (!s_Key)
             return;
 
         UAInput i = s_Key.InputP();
-        if (!i || !i.LocalPress())
+        if (!i)
+            return;
+
+        // Поки меню відкрите, клавіша ЗАКРИВАЄ його -- і Escape теж.
+        //
+        // Раніше опитування тут просто вимикалось, бо здавалось, що при
+        // відкритому меню інпути однаково заглушені. Тепер це не так: ми
+        // глушимо лише мишачі групи, клавіатура лишається живою, тож та сама
+        // клавіша чесно доходить і може працювати перемикачем.
+        if (s_Menu)
+        {
+            bool byKey  = i.LocalPress();
+            bool byBack = GetUApi().GetInputByID(UAUIBack).LocalPress();
+
+            if (byKey || byBack)
+            {
+                OZR_FreqMenu m = s_Menu;
+                s_Menu = null;
+                m.Close();
+            }
+            return;
+        }
+
+        if (!i.LocalPress())
             return;
 
         // Клавіша бачить сирі натискання незалежно від фокуса UI. Поле з
