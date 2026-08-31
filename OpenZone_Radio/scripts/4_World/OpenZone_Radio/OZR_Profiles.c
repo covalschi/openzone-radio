@@ -95,12 +95,23 @@ class OZR_Profiles : OZ_ConfigBase
             return;
         }
 
-        float gstep = OZR_Grid.StepMHz();
-        float lo    = OZR_Grid.MHzAt(0);
-        float hi    = OZR_Grid.MHzAt(OZR_Grid.Count() - 1);
+        float lo = OZR_Grid.MHzAt(0);
+        float hi = OZR_Grid.MHzAt(OZR_Grid.Count() - 1);
 
-        // З кінця: викидати з масиву, яким ідеш уперед, означає пропускати
-        // сусіда викинутого.
+        // ЩО ТУТ ВИКИДАЄТЬСЯ, А ЩО ЛИШЕ ЗГАДУЄТЬСЯ.
+        //
+        // Викидається те, з чого не можна вивести НІЧОГО: профіль без імені,
+        // порожня чи перевернута смуга, нульовий крок. Такий профіль зламав би
+        // і виведення ефіру, і саму рацію.
+        //
+        // Все інше лишається як написано. Раніше тут обрізали межі під сітку й
+        // округляли крок до її кроку -- і це було правильно, поки сітка була
+        // чимось зовнішнім. Тепер сітка ВИВОДИТЬСЯ з цих самих чисел, і
+        // переписати їх під стару сітку означало б знищити те, з чого будують
+        // нову: адмін просить 86 МГц, ми обрізаємо до 136, ефір виводиться з
+        // 136, і 86 не настає ніколи. Тому тут лише кажуть вголос, що профіль
+        // випереджає ефір, а обрізає використання (OZR_Grid.Window) -- до
+        // наступного старту сервера.
         for (int i = Radios.Count() - 1; i >= 0; i--)
         {
             OZR_RadioProfile p = Radios[i];
@@ -115,55 +126,33 @@ class OZR_Profiles : OZ_ConfigBase
 
             if (p.MinMHz >= p.MaxMHz)
             {
-                string empty = "profile \"" + p.ClassName;
-                empty += "\" has an empty band (" + p.MinMHz.ToString();
-                empty += ".." + p.MaxMHz.ToString() + ") - dropped";
+                string empty = "profile " + p.ClassName + " has an empty band (";
+                empty += OZR_Fmt.MHz(p.MinMHz) + ".." + OZR_Fmt.MHz(p.MaxMHz) + ") - dropped";
                 OZR_Log.Warn(empty);
                 Radios.Remove(i);
                 warnings++;
                 continue;
             }
 
-            // Поза сіткою -- значить рушій туди не налаштується. Обрізаємо, а
-            // не викидаємо: рація лишається робочою на тій частині, яка є.
-            if (p.MinMHz < lo || p.MaxMHz > hi)
-            {
-                string out_ = "profile \"" + p.ClassName + "\" asks for ";
-                out_ += p.MinMHz.ToString() + ".." + p.MaxMHz.ToString();
-                out_ += " MHz, but the engine grid is " + lo.ToString();
-                out_ += ".." + hi.ToString() + " - clamped";
-                OZR_Log.Warn(out_);
-                p.MinMHz = Math.Max(p.MinMHz, lo);
-                p.MaxMHz = Math.Min(p.MaxMHz, hi);
-                warnings++;
-            }
-
             if (p.StepMHz <= 0)
             {
-                string nostep = "profile \"" + p.ClassName;
-                nostep += "\" has no step - using the grid's " + gstep.ToString();
+                string nostep = "profile " + p.ClassName + " has no step - dropped";
                 OZR_Log.Warn(nostep);
-                p.StepMHz = gstep;
+                Radios.Remove(i);
                 warnings++;
+                continue;
             }
 
-            // Некратний крок -- найпідступніша з помилок: рація працює, крутиться,
-            // показує числа, і не чує НІКОГО, бо стоїть між діленнями сітки.
-            float ratio = p.StepMHz / gstep;
-            if (Math.AbsFloat(ratio - Math.Round(ratio)) > 0.01)
+            // Не помилка, а стан: ефір ще не наздогнав профіль. Рація працює на
+            // тій частині смуги, яка вже існує, і на всій -- після рестарту.
+            if (p.MinMHz < lo || p.MaxMHz > hi)
             {
-                float fixedStep = Math.Round(ratio) * gstep;
-                if (fixedStep < gstep)
-                    fixedStep = gstep;
-
-                string offgrid = "profile \"" + p.ClassName + "\" steps by ";
-                offgrid += p.StepMHz.ToString() + " MHz, which is not a multiple of the grid's ";
-                offgrid += gstep.ToString();
-                offgrid += " - it would sit between divisions and hear nobody; using ";
-                offgrid += fixedStep.ToString();
-                OZR_Log.Warn(offgrid);
-
-                p.StepMHz = fixedStep;
+                string ahead = "profile " + p.ClassName + " asks for ";
+                ahead += OZR_Fmt.MHz(p.MinMHz) + ".." + OZR_Fmt.MHz(p.MaxMHz);
+                ahead += " MHz while the running ether is " + OZR_Fmt.MHz(lo);
+                ahead += ".." + OZR_Fmt.MHz(hi);
+                ahead += " - it works on the overlap until the server is restarted";
+                OZR_Log.Warn(ahead);
                 warnings++;
             }
         }

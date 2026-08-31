@@ -25,7 +25,10 @@ modded class TransmitterBase
 
     void TransmitterBase()
     {
-        RegisterNetSyncVariableInt("m_OZR_Index", -1, 65535);
+        // Верхня межа -- та сама константа, з якої виводиться стеля ефіру.
+        // Розійтись їм не можна: сітка, ширша за синхронізацію, дала б канали,
+        // яких власник рації не бачить.
+        RegisterNetSyncVariableInt("m_OZR_Index", -1, OZR_Const.INDEX_MAX);
     }
 
     // Єдине місце, де частота міняється. Все інше кличе саме його, щоб не
@@ -76,27 +79,20 @@ modded class TransmitterBase
         return IsReceiving() || IsBroadcasting();
     }
 
-    // Крок профілю в діленнях сітки. Одиниця -- найдрібніше, що буває.
-    private int OZR_Stride(OZR_RadioProfile p)
-    {
-        float gs = OZR_Grid.StepMHz();
-        if (gs <= 0)
-            return 1;
-
-        int stride = Math.Round(p.StepMHz / gs);
-        if (stride < 1)
-            stride = 1;
-        return stride;
-    }
-
     // Наступне ділення в межах відрізка, з обгортанням по КОЛУ ВІДРІЗКА.
     // Обгортання, а не упор: ванільна поведінка -- це цикл, і рація, яка
     // дійшла до краю й перестала крутитись, читалась би як зламана.
+    //
+    // Межі беруться з OZR_Grid.Window -- тобто вже перетнуті з тим, що рушій
+    // роздає ЗАРАЗ. Профіль може випереджати ефір (його щойно правили, а
+    // сервер ще не перезапускали), і тоді рація крутиться по спільній частині.
     private int OZR_NextIndex(OZR_RadioProfile p, int current)
     {
-        int lo     = OZR_Grid.IndexOf(p.MinMHz);
-        int hi     = OZR_Grid.IndexOf(p.MaxMHz);
-        int stride = OZR_Stride(p);
+        int lo;
+        int hi;
+        int stride;
+        if (!OZR_Grid.Window(p, lo, hi, stride))
+            return GetTunedFrequencyIndex();
 
         if (current < lo || current > hi)
             return lo;
@@ -145,16 +141,16 @@ modded class TransmitterBase
             return;
 
         OZR_RadioProfile p = OZR_Profiles.For(GetType());
-        if (!p || !OZR_Grid.Ready())
+        int lo;
+        int hi;
+        int stride;
+        if (!p || !OZR_Grid.Window(p, lo, hi, stride))
         {
             OZR_Publish();
             return;
         }
 
-        int lo  = OZR_Grid.IndexOf(p.MinMHz);
-        int hi  = OZR_Grid.IndexOf(p.MaxMHz);
         int cur = GetTunedFrequencyIndex();
-
         if (cur < lo || cur > hi)
             OZR_TuneTo(lo);
         else

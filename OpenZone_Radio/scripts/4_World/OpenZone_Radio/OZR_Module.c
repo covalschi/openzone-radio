@@ -72,6 +72,11 @@ class OZR_Module : CF_ModuleWorld
         // Після проби: профілі перевіряються ПРОТИ виміряної сітки, і без неї
         // перевіряти нічим.
         OZR_Profiles.ServerLoad();
+        // Після профілів: ефір виводиться з них, і виводити його до того,
+        // як вони прочитані, нема з чого. Пише файл, який прочитає
+        // НАСТУПНИЙ старт сервера, і каже, чи вже діє.
+        OZR_EtherServer.Publish(OZR_Profiles.Get());
+
         OZR_Hardware.Declare();
         // Після ServerLoad, а не до: аплікатор перечитує ті самі конфіги, і
         // реєструвати шлях до ще не прочитаного файлу нема сенсу.
@@ -221,8 +226,14 @@ class OZR_Module : CF_ModuleWorld
         }
 
         int want = p.param1;
-        int lo   = OZR_Grid.IndexOf(prof.MinMHz);
-        int hi   = OZR_Grid.IndexOf(prof.MaxMHz);
+        int lo;
+        int hi;
+        int stride;
+        if (!OZR_Grid.Window(prof, lo, hi, stride))
+        {
+            OZR_Log.Dbg("tune refused: " + radio.GetType() + " does not overlap the running ether at all - restart the server");
+            return;
+        }
 
         if (want < lo || want > hi)
         {
@@ -232,13 +243,6 @@ class OZR_Module : CF_ModuleWorld
 
         // Ділення мусить лежати на ґратці САМОГО профілю, а не просто в його
         // межах: інакше рація стане між своїми каналами й не зустріне нікого.
-        int stride = 1;
-        float gs = OZR_Grid.StepMHz();
-        if (gs > 0)
-            stride = Math.Round(prof.StepMHz / gs);
-        if (stride < 1)
-            stride = 1;
-
         if (((want - lo) % stride) != 0)
         {
             OZR_Log.Dbg("tune refused: index " + want.ToString() + " is between this set's own channels");

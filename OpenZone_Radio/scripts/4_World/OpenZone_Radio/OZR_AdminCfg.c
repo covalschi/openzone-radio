@@ -59,6 +59,11 @@ class OZR_ProfilesApplier : OZ_AdminCfgApplier
 
         OZ_ConfigLoader<OZR_Profiles>.Save(OZR_Const.PROFILES, "RadioProfiles", tmp);
         OZR_Profiles.ServerLoad();
+
+        // Ефір іде слідом за профілями, завжди. Інакше на диску лишилась би
+        // сітка, виведена з ПОПЕРЕДНІХ чисел, і наступний старт сервера підняв
+        // би ефір, якого вже ніхто не просив.
+        OZR_EtherServer.Publish(OZR_Profiles.Get());
         return true;
     }
 }

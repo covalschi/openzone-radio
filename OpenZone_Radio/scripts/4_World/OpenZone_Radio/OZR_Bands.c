@@ -53,7 +53,11 @@ class OZR_Bands
 
         float first = 0;
 
-        for (int i = 0; i < OZR_Const.BAND_PROBE_MAX; i++)
+        // Межа циклу -- НЕ очікувана довжина сітки, а найбільший індекс,
+        // який узагалі має сенс (див. OZR_Const.INDEX_MAX). Проба виходить
+        // сама -- на обгортанні або на відмові рушія, -- тож у нормальному
+        // випадку цей потолок не досягається взагалі.
+        for (int i = 0; i <= OZR_Const.INDEX_MAX; i++)
         {
             probe.SetFrequencyByIndex(i);
 
@@ -82,10 +86,18 @@ class OZR_Bands
 
         GetGame().ObjectDelete(obj);
 
-        string line = "band table measured: " + s_Freqs.Count().ToString() + " frequencies";
-        for (int k = 0; k < s_Freqs.Count(); k++)
+        // Друкуємо КРАЇ, а не всю таблицю. Коли частот було вісім, повний
+        // список був найкориснішим, що можна сказати; на тисячі з гаком це
+        // рядок на кілька екранів, у якому вже нічого не видно.
+        int have = s_Freqs.Count();
+        string line = "band table measured: " + have.ToString() + " frequencies";
+        if (have > 0)
         {
-            line += "  " + s_Freqs[k].ToString();
+            line += "  " + s_Freqs[0].ToString();
+            if (have > 2)
+                line += " .. ";
+            if (have > 1)
+                line += " " + s_Freqs[have - 1].ToString();
         }
         OZR_Log.Info(line);
     }

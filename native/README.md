@@ -44,7 +44,20 @@ cannot be overwritten.
 
 ## Configuration
 
-`oz_frequencies.json`, beside the DLL:
+Two places are looked at, in this order:
+
+1. `<profiles>/OpenZone/Frequencies.json` -- the `-profiles` directory named on
+   the server's own command line. **This is normally the live one, and it is
+   not written by hand:** the mod derives it from the radio profiles an admin
+   edits in game (lowest band bottom, highest band top, and the greatest common
+   divisor of every step and every bound offset), so the ether is always exactly
+   what the radios ask for. Script file access in DayZ is confined to
+   `$profile:`, which is why this path exists at all -- it is the only one an
+   in-game admin panel can reach.
+2. `oz_frequencies.json`, beside the DLL -- the fallback and the shipped
+   default, used when the first is absent.
+
+Either file holds the same three numbers:
 
 ```json
 {
@@ -53,6 +66,10 @@ cannot be overwritten.
   "count": 64
 }
 ```
+
+Read once, at process start, because that is when the patch is applied: a change
+takes effect on the NEXT server start, and the mod says so in its own log rather
+than leaving the delay to be discovered.
 
 Only distinctness matters to the engine — it keys channels on the four bytes of
 the `float`, so any step that keeps values apart in `float32` works. A missing

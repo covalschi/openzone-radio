@@ -44,29 +44,47 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   ignorepointer 1
   text "RADIO PROFILES"
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 14
   color 0.788 0.788 0.816 1
   priority 4
  }
  TextWidgetClass RadGrid {
   position 20 26
-  size 560 20
+  size 660 20
   hexactpos 1
   vexactpos 1
   hexactsize 1
   vexactsize 1
   visible 1
   ignorepointer 1
-  text "grid: waiting for the server"
-  font "gui/fonts/MetronBook14"
+  text "ether now: waiting for the server"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 14
+  color 0.451 0.463 0.494 1
+  priority 4
+ }
+ TextWidgetClass RadEther {
+  position 20 44
+  size 660 20
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  text ""
+  font "gui/fonts/sdf_MetronBook24"
+  "exact text" 1
+  "exact text size" 14
   color 0.451 0.463 0.494 1
   priority 4
  }
  TextListboxWidgetClass RadList {
-  position 20 52
-  size 330 300
+  position 20 68
+  size 330 284
   hexactpos 1
   vexactpos 1
   hexactsize 1
@@ -128,8 +146,9 @@ FrameWidgetClass OZ_RadioVppPane {
     visible 1
     ignorepointer 1
     text "NEW"
-    font "gui/fonts/MetronBook14"
+    font "gui/fonts/sdf_MetronBook24"
     "exact text" 1
+    "exact text size" 15
     "text halign" center
     color 0.788 0.788 0.816 1
     priority 6
@@ -183,8 +202,9 @@ FrameWidgetClass OZ_RadioVppPane {
     visible 1
     ignorepointer 1
     text "DELETE"
-    font "gui/fonts/MetronBook14"
+    font "gui/fonts/sdf_MetronBook24"
     "exact text" 1
+    "exact text size" 15
     "text halign" center
     color 0.788 0.788 0.816 1
     priority 6
@@ -214,13 +234,14 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   ignorepointer 1
   text "SELECTED PROFILE"
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 14
   color 0.788 0.788 0.816 1
   priority 4
  }
  TextWidgetClass L_RadF_Class {
-  position 380 55
+  position 380 71
   size 150 20
   hexactpos 1
   vexactpos 1
@@ -229,13 +250,14 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   ignorepointer 1
   text "Item class"
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 14
   color 0.545 0.561 0.596 1
   priority 4
  }
  EditBoxWidgetClass RadF_Class {
-  position 530 52
+  position 530 68
   size 330 24
   hexactpos 1
   vexactpos 1
@@ -244,12 +266,13 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   color 0.788 0.788 0.816 1
   text ""
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 15
   priority 4
  }
  TextWidgetClass L_RadF_Min {
-  position 380 89
+  position 380 105
   size 150 20
   hexactpos 1
   vexactpos 1
@@ -258,13 +281,14 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   ignorepointer 1
   text "Band from, MHz"
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 14
   color 0.545 0.561 0.596 1
   priority 4
  }
  EditBoxWidgetClass RadF_Min {
-  position 530 86
+  position 530 102
   size 200 24
   hexactpos 1
   vexactpos 1
@@ -273,12 +297,13 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   color 0.788 0.788 0.816 1
   text ""
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 15
   priority 4
  }
  TextWidgetClass L_RadF_Max {
-  position 380 123
+  position 380 139
   size 150 20
   hexactpos 1
   vexactpos 1
@@ -287,13 +312,14 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   ignorepointer 1
   text "Band to, MHz"
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 14
   color 0.545 0.561 0.596 1
   priority 4
  }
  EditBoxWidgetClass RadF_Max {
-  position 530 120
+  position 530 136
   size 200 24
   hexactpos 1
   vexactpos 1
@@ -302,12 +328,13 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   color 0.788 0.788 0.816 1
   text ""
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 15
   priority 4
  }
  TextWidgetClass L_RadF_Step {
-  position 380 157
+  position 380 173
   size 150 20
   hexactpos 1
   vexactpos 1
@@ -316,13 +343,14 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   ignorepointer 1
   text "Step, MHz"
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 14
   color 0.545 0.561 0.596 1
   priority 4
  }
  EditBoxWidgetClass RadF_Step {
-  position 530 154
+  position 530 170
   size 200 24
   hexactpos 1
   vexactpos 1
@@ -331,12 +359,13 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   color 0.788 0.788 0.816 1
   text ""
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 15
   priority 4
  }
  TextWidgetClass L_RadF_Range {
-  position 380 199
+  position 380 215
   size 150 20
   hexactpos 1
   vexactpos 1
@@ -345,13 +374,14 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   ignorepointer 1
   text "Range, m"
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 14
   color 0.545 0.561 0.596 1
   priority 4
  }
  TextWidgetClass RadF_Range {
-  position 530 199
+  position 530 215
   size 200 20
   hexactpos 1
   vexactpos 1
@@ -360,13 +390,14 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   ignorepointer 1
   text "-"
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 14
   color 0.788 0.788 0.816 1
   priority 4
  }
  TextWidgetClass RadF_RangeNote {
-  position 380 222
+  position 380 238
   size 580 20
   hexactpos 1
   vexactpos 1
@@ -375,13 +406,14 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   ignorepointer 1
   text "read only: range lives in the item config and the engine reads it there"
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 14
   color 0.451 0.463 0.494 1
   priority 4
  }
  PanelWidgetClass SecRadCheckBar {
-  position 380 256
+  position 380 272
   size 3 16
   hexactpos 1
   vexactpos 1
@@ -394,7 +426,7 @@ FrameWidgetClass OZ_RadioVppPane {
   style rover_sim_colorable
  }
  TextWidgetClass SecRadCheckLbl {
-  position 392 254
+  position 392 270
   size 420 20
   hexactpos 1
   vexactpos 1
@@ -403,13 +435,14 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   ignorepointer 1
   text "WHAT THIS PROFILE COMES OUT AS"
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 14
   color 0.788 0.788 0.816 1
   priority 4
  }
  TextWidgetClass RadF_Chan {
-  position 380 282
+  position 380 298
   size 580 20
   hexactpos 1
   vexactpos 1
@@ -418,13 +451,14 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   ignorepointer 1
   text "-"
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 14
   color 0.788 0.788 0.816 1
   priority 4
  }
  TextWidgetClass RadF_Fit1 {
-  position 380 304
+  position 380 320
   size 580 20
   hexactpos 1
   vexactpos 1
@@ -433,13 +467,14 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   ignorepointer 1
   text "-"
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 14
   color 0.788 0.788 0.816 1
   priority 4
  }
  TextWidgetClass RadF_Fit2 {
-  position 380 326
+  position 380 342
   size 580 20
   hexactpos 1
   vexactpos 1
@@ -448,13 +483,14 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   ignorepointer 1
   text "-"
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 14
   color 0.788 0.788 0.816 1
   priority 4
  }
  TextWidgetClass RadF_Fit3 {
-  position 380 348
+  position 380 364
   size 580 20
   hexactpos 1
   vexactpos 1
@@ -463,8 +499,9 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   ignorepointer 1
   text "-"
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 14
   color 0.788 0.788 0.816 1
   priority 4
  }
@@ -515,8 +552,9 @@ FrameWidgetClass OZ_RadioVppPane {
     visible 1
     ignorepointer 1
     text "CHECK"
-    font "gui/fonts/MetronBook14"
+    font "gui/fonts/sdf_MetronBook24"
     "exact text" 1
+    "exact text size" 15
     "text halign" center
     color 0.788 0.788 0.816 1
     priority 6
@@ -570,8 +608,9 @@ FrameWidgetClass OZ_RadioVppPane {
     visible 1
     ignorepointer 1
     text "SAVE ALL"
-    font "gui/fonts/MetronBook14"
+    font "gui/fonts/sdf_MetronBook24"
     "exact text" 1
+    "exact text size" 15
     "text halign" center
     color 0.788 0.788 0.816 1
     priority 6
@@ -625,8 +664,9 @@ FrameWidgetClass OZ_RadioVppPane {
     visible 1
     ignorepointer 1
     text "RELOAD"
-    font "gui/fonts/MetronBook14"
+    font "gui/fonts/sdf_MetronBook24"
     "exact text" 1
+    "exact text size" 15
     "text halign" center
     color 0.788 0.788 0.816 1
     priority 6
@@ -643,8 +683,9 @@ FrameWidgetClass OZ_RadioVppPane {
   visible 1
   ignorepointer 1
   text ""
-  font "gui/fonts/MetronBook14"
+  font "gui/fonts/sdf_MetronBook24"
   "exact text" 1
+  "exact text size" 14
   color 1 0.478 0.102 1
   priority 4
  }
