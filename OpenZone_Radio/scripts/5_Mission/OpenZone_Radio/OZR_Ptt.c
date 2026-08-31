@@ -1,8 +1,15 @@
 // Кнопка «говорити».
 //
-// Одна клавіша на дві різні рації. Плата в КПК слухає її давно; тепер її ж
-// слухає ручна рація в руках, і це навмисно та сама клавіша: «говорити в
-// рацію» -- одна дія, а яка саме рація в тебе зараз, гравець і так знає.
+// Одна клавіша на всі рації гравця, які цей мод уміє відкрити. Ручні -- сам,
+// плата в КПК -- через слухача, якого доклада склейка @OpenZone_Radio_PDA:
+// «говорити в рацію» -- одна дія, а яка саме коробка в тебе зараз, гравець і
+// так знає.
+//
+// СЛУХАЧІ, А НЕ ПРЯМИЙ ВИКЛИК. Раніше тут стояв виклик сторінки КПК, і через
+// нього рація не існувала без КПК зовсім. У DayZ немає необов'язкових посилань
+// -- клас із незавантаженого мода не можна згадати навіть у мертвій гілці, --
+// тож зв'язок довелось перевернути: цей файл лише повідомляє про край, а хто
+// на нього підписався, він не знає.
 //
 // ЧОМУ РУЧНІЙ РАЦІЇ ВЗАГАЛІ ПОТРІБЕН PTT. У ванілі його немає: TransmitterBase
 // .OnWorkStart відкриває передавач разом із живленням (EnableBroadcast(true)),
@@ -37,6 +44,28 @@ class OZR_Ptt
     private static bool s_Down    = false;
     private static bool s_Warned  = false;
 
+    // Хто ще хоче знати про край. Порожньо, поки ніхто не підписався -- саме
+    // так виглядає рація без КПК.
+    private static ref array<OZR_PttListener> s_Ears;
+
+    static void Listen(OZR_PttListener who)
+    {
+        if (!who)
+            return;
+        if (!s_Ears)
+            s_Ears = new array<OZR_PttListener>();
+        if (s_Ears.Find(who) == -1)
+            s_Ears.Insert(who);
+    }
+
+    private static void Tell(bool on)
+    {
+        if (!s_Ears)
+            return;
+        for (int i = 0; i < s_Ears.Count(); i++)
+            s_Ears[i].OnPtt(on);
+    }
+
     // Защіпка й вимір подвійного натиснення.
     private static bool s_Latched   = false;
     private static int  s_LastPress = 0;
@@ -55,19 +84,19 @@ class OZR_Ptt
 
     static void Init()
     {
-        UAInput i = GetUApi().GetInputByName(OZ_PdaConst.INPUT_PTT);
+        UAInput i = GetUApi().GetInputByName(OZR_Const.INPUT_PTT);
         if (!i)
         {
             if (!s_Warned)
             {
                 s_Warned = true;
-                OZR_Log.Error("input " + OZ_PdaConst.INPUT_PTT + " not found - check the CfgMods inputs= path in OpenZone_PDA and the name in inputs.xml");
+                OZR_Log.Error("input " + OZR_Const.INPUT_PTT + " not found - check the CfgMods inputs= path and the name in inputs.xml");
             }
             return;
         }
 
         s_Key = i.GetPersistentWrapper();
-        OZR_Log.Dbg("input " + OZ_PdaConst.INPUT_PTT + " bound");
+        OZR_Log.Dbg("input " + OZR_Const.INPUT_PTT + " bound");
     }
 
     static void Poll()
@@ -86,9 +115,9 @@ class OZR_Ptt
         {
             s_Down = down;
 
-            // Плата КПК -- як була: чисте натиснуто/відпущено, без защіпки.
-            // Замок на ній був би замком на пристрої, якого не видно в руках.
-            Say(down);
+            // Хто підписався -- тому чистий край, без защіпки. Замок на платі
+            // КПК був би замком на пристрої, якого не видно в руках.
+            Tell(down);
 
             if (down)
                 Pressed();
@@ -111,7 +140,7 @@ class OZR_Ptt
         if (s_Down)
         {
             s_Down = false;
-            Say(false);
+            Tell(false);
         }
 
         if (s_Sent)
@@ -220,18 +249,6 @@ class OZR_Ptt
     // Ручна рація: свій RPC, бо це не сторінка КПК і предмет тут інший.
     private static void Send(bool on)
     {
-        GetRPCManager().SendRPC(OZ_Const.MOD, OZR_Const.RPC_PTT, new Param1<bool>(on), true);
-    }
-
-    // Плата КПК: як і було, через договір сторінок.
-    private static void Say(bool on)
-    {
-        OZR_PttRef r = new OZR_PttRef();
-        r.On = on;
-
-        string json;
-        string err;
-        if (JsonFileLoader<OZR_PttRef>.MakeData(r, json, err, false))
-            OZ_Rpc.Request(OZR_Const.PAGE_RADIO, "ptt", json);
+        GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_PTT, new Param1<bool>(on), true);
     }
 }

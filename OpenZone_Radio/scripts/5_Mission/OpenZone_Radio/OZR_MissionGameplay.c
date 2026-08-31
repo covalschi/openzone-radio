@@ -12,7 +12,6 @@ modded class MissionGameplay
     {
         super.OnInit();
 
-        OZ_PdaPageFactory.Add(OZR_Const.PAGE_RADIO, OZR_PageRadio);
         OZR_Ptt.Init();
         OZR_FreqInput.Init();
     }

@@ -24,11 +24,31 @@ class OZR_Log
         Print(OZR_Const.LOG_PREFIX + "ERROR: " + msg);
     }
 
-    // Тихий рівень: вмикається тим самим Settings.Debug ядра, бо два окремі
-    // вимикачі для однієї збірки -- це два місця, які розійдуться.
+    // Тихий рівень.
+    //
+    // Прапорець ВЛАСНИЙ, і це не свавілля. Ядро тут може бути відсутнє: рація
+    // самостійна, а посилання на клас із незавантаженого мода в Enforce не
+    // існує навіть у мертвій гілці. Тому вмикач свій -- у Radio.json.
+    //
+    // Коли ядро все ж стоїть, один вимикач на всю збірку зберігається:
+    // склейка @OpenZone_Radio_PDA (яка ядро жорстко вимагає) переставляє цей
+    // прапорець за ядерним при старті. Два місця не розходяться, бо друге
+    // лише повторює перше.
+    private static bool s_Debug = false;
+
+    static void SetDebug(bool on)
+    {
+        s_Debug = on;
+    }
+
+    static bool IsDebug()
+    {
+        return s_Debug;
+    }
+
     static void Dbg(string msg)
     {
-        if (!OZ_Log.IsDebug())
+        if (!s_Debug)
             return;
         Print(OZR_Const.LOG_PREFIX + "dbg: " + msg);
     }

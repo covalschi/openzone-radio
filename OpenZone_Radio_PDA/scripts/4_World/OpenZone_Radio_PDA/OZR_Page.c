@@ -47,12 +47,12 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
 
         if (board)
         {
-            OZR_Channel here = OZR_Settings.ByBand(board.GetTunedFrequencyIndex());
+            OZR_Channel here = OZR_ChannelCfg.ByBand(board.GetTunedFrequencyIndex());
             if (here)
                 st.Current = here.Id;
         }
 
-        OZR_Settings cfg = OZR_Settings.Get();
+        OZR_ChannelCfg cfg = OZR_ChannelCfg.Get();
         for (int i = 0; cfg && cfg.Channels && i < cfg.Channels.Count(); i++)
         {
             OZR_Channel c = cfg.Channels[i];
@@ -99,7 +99,7 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
         if (!Ready(sender, board, error))
             return "";
 
-        OZR_Channel c = OZR_Settings.ById(r.Id);
+        OZR_Channel c = OZR_ChannelCfg.ById(r.Id);
         if (!c)
         {
             error = "STR_OZR_ERR_NO_CHANNEL";

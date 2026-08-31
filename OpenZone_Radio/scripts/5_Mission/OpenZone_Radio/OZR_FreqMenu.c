@@ -426,7 +426,7 @@ class OZR_FreqMenu extends UIScriptedMenu
 
     private void Send(int idx)
     {
-        GetRPCManager().SendRPC(OZ_Const.MOD, OZR_Const.RPC_TUNE, new Param1<int>(idx), true);
+        GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_TUNE, new Param1<int>(idx), true);
         OZR_Log.Dbg("freq keypad: asked for index " + idx.ToString() + " (" + OZR_Fmt.MHz(OZR_ClientGrid.MHzAt(idx)) + ")");
     }
 

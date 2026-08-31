@@ -2,10 +2,10 @@
 <!--
 	Read by the ENGINE, wired up by CfgMods `inputs=`.
 
-	A mod gets ONE inputs file: a second one is simply not read. The PTT key
-	lives in OpenZone_PDA's file because the radio board is a PDA module and
-	the radio mod had no file of its own. This key is different -- handheld
-	sets are not PDA modules, so their key belongs to this mod.
+	A mod gets ONE inputs file: a second one is simply not read. Both of this
+	mod's keys live here, and the PTT one used to live in OpenZone_PDA's --
+	back when the radio could not exist without the PDA. It can now, so a key
+	borrowed from another mod would be a key that vanishes with it.
 
 	<sorting> is what makes a key VISIBLE and REBINDABLE in Settings ->
 	Controls. Without it the input exists but the player can never find it.
@@ -21,14 +21,19 @@
 	<inputs>
 		<actions>
 			<input name="UAOZRadioFreq" loc="oz_input_radio_freq"/>
+			<input name="UAOZRadioPtt"  loc="oz_input_radio_ptt"/>
 		</actions>
 		<sorting name="openzone" loc="oz_input_group">
 			<input name="UAOZRadioFreq"/>
+			<input name="UAOZRadioPtt"/>
 		</sorting>
 	</inputs>
 	<preset>
 		<input name="UAOZRadioFreq">
 			<btn name="kK"/>
+		</input>
+		<input name="UAOZRadioPtt">
+			<btn name="kCapital"/>
 		</input>
 	</preset>
 </modded_inputs>

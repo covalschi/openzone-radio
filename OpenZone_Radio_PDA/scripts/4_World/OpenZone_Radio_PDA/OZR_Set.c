@@ -27,7 +27,7 @@ class OZR_Set
                 continue;
 
             OZ_ModuleSpec spec = OZ_PdaHardware.ModuleFor(att.GetType());
-            if (!spec || spec.Kind != OZR_Const.MOD_RADIO)
+            if (!spec || spec.Kind != OZRP_Const.MOD_RADIO)
                 continue;
 
             OZ_Module_Radio board = OZ_Module_Radio.Cast(att);

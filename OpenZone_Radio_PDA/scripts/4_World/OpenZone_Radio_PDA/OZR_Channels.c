@@ -21,38 +21,43 @@ class OZR_Channel
     string Faction = "";
 }
 
-class OZR_Settings : OZ_ConfigBase
+class OZR_ChannelCfg : OZ_ConfigBase
 {
     ref array<ref OZR_Channel> Channels;
 
-    private static ref OZR_Settings s_Inst;
+    private static ref OZR_ChannelCfg s_Inst;
 
-    static OZR_Settings Get()
+    static OZR_ChannelCfg Get()
     {
         return s_Inst;
     }
 
     override int LatestVersion()
     {
-        return OZR_Const.SCHEMA_RADIO;
+        return OZRP_Const.SCHEMA_RADIO;
     }
 
     // Типово -- по каналу на кожну ВИМІРЯНУ смугу. Не сім і не вісім: скільки
     // рушій дав, стільки й буде, і на іншій збірці число зміниться саме.
+    // ПОРОЖНЬО, і це рішення, а не недогляд.
+    //
+    // Тут колись стояло «по каналу на кожну виміряну смугу», і воно було
+    // правильним рівно доти, доки смуг було вісім. Після зняття межі ефір буває
+    // на тисячі ділень -- і той самий рядок породив би п'ять тисяч каналів
+    // «Channel 1..5281», тобто перелік, у якому нічого не знайти.
+    //
+    // Друга причина важливіша за першу. Канал -- це ІМ'Я, яке дає адмін:
+    // «Борг», «черговий», «торг». Вигадати замість нього вісім безіменних
+    // означає вдати, ніби рішення вже ухвалене, і сховати від адміна, що воно
+    // за ним. Порожній список і рядок у лозі кажуть правду.
+    //
+    // Третє, дрібне, але саме воно ловилось як «channels=0»: перелік, зібраний
+    // із виміряної сітки, залежав би від того, чий CF-модуль устиг першим.
+    // Порожній не залежить ні від чого.
     override void LoadDefaults()
     {
         Version  = LatestVersion();
         Channels = new array<ref OZR_Channel>();
-
-        for (int i = 0; i < OZR_Bands.Count(); i++)
-        {
-            OZR_Channel c = new OZR_Channel();
-            c.Id      = "ch" + (i + 1).ToString();
-            c.Name    = "Channel " + (i + 1).ToString();
-            c.Band    = i;
-            c.Faction = "";
-            Channels.Insert(c);
-        }
     }
 
     override bool Migrate(int from)
@@ -100,8 +105,8 @@ class OZR_Settings : OZ_ConfigBase
 
             if (c.Name == "")
                 c.Name = c.Id;
-            if (c.Name.Length() > OZR_Const.CH_NAME_MAX)
-                c.Name = c.Name.Substring(0, OZR_Const.CH_NAME_MAX);
+            if (c.Name.Length() > OZRP_Const.CH_NAME_MAX)
+                c.Name = c.Name.Substring(0, OZRP_Const.CH_NAME_MAX);
         }
 
         if (Channels.Count() == 0 && bands > 0)
@@ -140,7 +145,7 @@ class OZR_Settings : OZ_ConfigBase
 
     static void ServerLoad()
     {
-        s_Inst = new OZR_Settings();
-        OZ_ConfigLoader<OZR_Settings>.Load(OZR_Const.SETTINGS, "Radio", s_Inst);
+        s_Inst = new OZR_ChannelCfg();
+        OZ_ConfigLoader<OZR_ChannelCfg>.Load(OZRP_Const.CHANNELS, "Radio", s_Inst);
     }
 }

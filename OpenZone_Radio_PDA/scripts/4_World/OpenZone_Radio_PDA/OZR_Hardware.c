@@ -27,12 +27,12 @@ class OZR_Hardware
         OZ_ModuleSpec radio = new OZ_ModuleSpec();
         radio.ClassName    = "OZ_Module_Radio";
         radio.DisplayName  = "#STR_OZR_MOD_RADIO";
-        radio.Kind         = OZR_Const.MOD_RADIO;
+        radio.Kind         = OZRP_Const.MOD_RADIO;
         // Приймач шумить постійно, передавач -- лише коли говорять. Півтора
         // -- це «чутно по батареї, але не смертельно».
         radio.PowerFactor  = 1.5;
         radio.EnablesPages = new array<string>();
-        radio.EnablesPages.Insert(OZR_Const.PAGE_RADIO);
+        radio.EnablesPages.Insert(OZRP_Const.PAGE_RADIO);
         if (OZ_PdaHardware.Declare(radio))
             s_Declared++;
 

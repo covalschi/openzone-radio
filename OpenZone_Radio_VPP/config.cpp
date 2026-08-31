@@ -38,10 +38,14 @@ class CfgMods
         version = "0.1.0";
         type = "mod";
 
-        dependencies[] = {"Mission"};
+        dependencies[] = {"World", "Mission"};
 
         class defs
         {
+            // 4_World з'явився разом із розділенням: реєстрація профілів у
+            // консолі ядра переїхала сюди з мода рації, бо консоль -- служба
+            // ядра, а рація має працювати й без нього.
+            class worldScriptModule   { value = ""; files[] = {"OpenZone_Radio_VPP/scripts/4_World"}; };
             class missionScriptModule { value = ""; files[] = {"OpenZone_Radio_VPP/scripts/5_Mission"}; };
         };
     };

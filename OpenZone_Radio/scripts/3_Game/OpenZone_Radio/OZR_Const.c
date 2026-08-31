@@ -4,12 +4,11 @@ class OZR_Const
 {
     static const string LOG_PREFIX = "[OpenZone/Radio] ";
 
-    // Сторінка «Рація» в КПК. Її вмикає модуль рації, а не профіль: без
-    // плати рації сторінці нема що показувати.
-    static const string PAGE_RADIO = "radio";
-
-    // Вид модуля в договорі OZ_PdaHardware.
-    static const string MOD_RADIO = "radio";
+    // Простір імен RPC. ВЛАСНИЙ, а не ядерний OZ_Const.MOD: рація працює й там,
+    // де ядра немає, а рядок цей -- лише ключ, за яким CF розводить пакети.
+    // Значення збігається з ядерним навмисне -- родина одна, і розводити її по
+    // різних просторах немає за що.
+    static const string MOD = "OpenZone";
 
     // Найбільший індекс каналу, який ще може дійти до гравця.
     //
@@ -32,14 +31,14 @@ class OZR_Const
     // єдиний ItemTransmitter, який точно є на будь-якому сервері.
     static const string BAND_PROBE_CLASS = "PersonalRadio";
 
-    // Класнейм плати рації. Знати його треба: саме цей предмет і є
-    // передавачем, який рушій бачить у гравця.
-    static const string BOARD_CLASS = "OZ_Module_Radio";
-
-    // Канали адмін описує тут. Файл лежить поруч із рештою конфігів OpenZone.
-    static const string SETTINGS       = "$profile:OpenZone\\Radio.json";
-    static const int    SCHEMA_RADIO   = 1;
-    static const int    CH_NAME_MAX    = 24;
+    // Власні налаштування мода. Поки що в них одне поле -- вимикач діагностики.
+    //
+    // ІМ'Я НОВЕ, і це не смак. Radio.json уже існує на серверах і належить
+    // спискові каналів КПК; зайняти його своїми полями означало б ЗАТЕРТИ
+    // чужі дані на першому ж старті -- що тут одного разу й сталося, поки
+    // файл називався так. Нову річ називають новим іменем.
+    static const string SETTINGS      = "$profile:OpenZone\\RadioSettings.json";
+    static const int    SCHEMA_RADIO  = 1;
 
     // Профілі ручних рацій: діапазон і крок на класнейм. Окремий файл, бо це
     // окреме рішення адміна -- канали КПК і те, куди дістає ручна рація, не
@@ -60,9 +59,10 @@ class OZR_Const
     // клієнті -- це його власний профіль, і сервера це не стосується.
     static const string KEYPAD_POS = "$profile:OpenZone\\RadioKeypad.json";
 
-    // Клавіша цифрової клавіатури частот. Оголошена у ВЛАСНОМУ inputs.xml
-    // цього мода: ручна рація -- не модуль КПК.
+    // Клавіші. Обидві оголошені у ВЛАСНОМУ inputs.xml цього мода: ручна рація
+    // не модуль КПК, і позичена в сусіда клавіша зникала б разом із ним.
     static const string INPUT_FREQ = "UAOZRadioFreq";
+    static const string INPUT_PTT  = "UAOZRadioPtt";
 
     // Ідентифікатор меню.
     //

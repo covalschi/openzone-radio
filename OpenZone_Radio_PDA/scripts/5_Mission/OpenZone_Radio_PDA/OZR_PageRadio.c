@@ -42,7 +42,7 @@ class OZR_PageRadio : OZ_PdaPage
 
     private void Ask()
     {
-        OZ_Rpc.Request(OZR_Const.PAGE_RADIO, "list", "{}");
+        OZ_Rpc.Request(OZRP_Const.PAGE_RADIO, "list", "{}");
     }
 
     override bool OnPageItemSelected(Widget w, int row)
@@ -72,7 +72,7 @@ class OZR_PageRadio : OZ_PdaPage
         string json;
         string err;
         if (JsonFileLoader<OZR_TuneRef>.MakeData(r, json, err, false))
-            OZ_Rpc.Request(OZR_Const.PAGE_RADIO, "tune", json);
+            OZ_Rpc.Request(OZRP_Const.PAGE_RADIO, "tune", json);
 
         return true;
     }

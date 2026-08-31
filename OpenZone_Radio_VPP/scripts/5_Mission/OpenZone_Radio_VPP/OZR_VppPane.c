@@ -70,14 +70,14 @@ modded class OZ_VppAdminMenu
 
         if (id == "radio")
         {
-            AskCfg(OZR_AdminCfg.CFG_PROFILES);
+            AskCfg(OZR_VppAdminCfg.CFG_PROFILES);
             PaintGrid();
         }
     }
 
     override void OnCfgText(string name, string body)
     {
-        if (name == OZR_AdminCfg.CFG_PROFILES)
+        if (name == OZR_VppAdminCfg.CFG_PROFILES)
         {
             OZR_Profiles c;
             string err;
@@ -104,7 +104,7 @@ modded class OZ_VppAdminMenu
     {
         super.OnCfgApplied();
         if (CurrentPane() == "radio")
-            AskCfg(OZR_AdminCfg.CFG_PROFILES);
+            AskCfg(OZR_VppAdminCfg.CFG_PROFILES);
     }
 
     override bool OnItemSelected(Widget w, int x, int y, int row, int column, int oldRow, int oldColumn)
@@ -146,7 +146,7 @@ modded class OZ_VppAdminMenu
             if (nm == "BtnRadReload")
             {
                 m_RadDelArmed = false;
-                AskCfg(OZR_AdminCfg.CFG_PROFILES);
+                AskCfg(OZR_VppAdminCfg.CFG_PROFILES);
                 Hint("reloaded from the server");
                 return true;
             }
@@ -527,7 +527,7 @@ modded class OZ_VppAdminMenu
             return;
         }
 
-        SendCfg(OZR_AdminCfg.CFG_PROFILES, body);
+        SendCfg(OZR_VppAdminCfg.CFG_PROFILES, body);
         m_RadDelArmed = false;
         RebuildRadList();
         Hint("sent to the server");

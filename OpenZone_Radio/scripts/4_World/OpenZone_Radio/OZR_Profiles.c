@@ -9,7 +9,7 @@
 // варто: саме шматок, куди дешева рація не дістає, і робить дорогу вартою
 // того, щоб її шукати.
 
-class OZR_Profiles : OZ_ConfigBase
+class OZR_Profiles : OZR_ConfigBase
 {
     ref array<ref OZR_RadioProfile> Radios;
 
@@ -176,6 +176,6 @@ class OZR_Profiles : OZ_ConfigBase
     static void ServerLoad()
     {
         s_Inst = new OZR_Profiles();
-        OZ_ConfigLoader<OZR_Profiles>.Load(OZR_Const.PROFILES, "RadioProfiles", s_Inst);
+        OZR_ConfigLoader<OZR_Profiles>.Load(OZR_Const.PROFILES, "RadioProfiles", s_Inst);
     }
 }

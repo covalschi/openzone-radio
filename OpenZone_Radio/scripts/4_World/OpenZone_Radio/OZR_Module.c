@@ -18,13 +18,6 @@
 [CF_RegisterModule(OZR_Module)]
 class OZR_Module : CF_ModuleWorld
 {
-    // Прийом тримається в тон живленню КПК поза сторінкою -- рація, яка
-    // починає чути лише коли на неї подивишся, це не рація. Дві секунди --
-    // непомітно для гравця й дешево для сервера: обхід онлайну й нічого
-    // більше.
-    private ref Timer m_SyncTimer;
-    private static const float SYNC_INTERVAL = 2.0;
-
     override void OnInit()
     {
         super.OnInit();
@@ -52,7 +45,7 @@ class OZR_Module : CF_ModuleWorld
         // пакет іде в нікуди. Тяга від порядку не залежить.
         if (GetGame().IsClient())
         {
-            GetRPCManager().AddRPC(OZ_Const.MOD, OZR_Const.RPC_GRID_RES, this, SingleplayerExecutionType.Client);
+            GetRPCManager().AddRPC(OZR_Const.MOD, OZR_Const.RPC_GRID_RES, this, SingleplayerExecutionType.Client);
 
             m_PullsLeft = PULL_TRIES;
             m_PullTimer = new Timer(CALL_CATEGORY_SYSTEM);
@@ -63,12 +56,15 @@ class OZR_Module : CF_ModuleWorld
         if (!GetGame().IsServer())
             return;
 
-        GetRPCManager().AddRPC(OZ_Const.MOD, OZR_Const.RPC_GRID_REQ, this, SingleplayerExecutionType.Server);
-        GetRPCManager().AddRPC(OZ_Const.MOD, OZR_Const.RPC_TUNE,     this, SingleplayerExecutionType.Server);
-        GetRPCManager().AddRPC(OZ_Const.MOD, OZR_Const.RPC_PTT,      this, SingleplayerExecutionType.Server);
+        GetRPCManager().AddRPC(OZR_Const.MOD, OZR_Const.RPC_GRID_REQ, this, SingleplayerExecutionType.Server);
+        GetRPCManager().AddRPC(OZR_Const.MOD, OZR_Const.RPC_TUNE,     this, SingleplayerExecutionType.Server);
+        GetRPCManager().AddRPC(OZR_Const.MOD, OZR_Const.RPC_PTT,      this, SingleplayerExecutionType.Server);
+
+        // Найперше: рівень діагностики стоїть саме тут, і рядки нижче вже
+        // мають на нього зважати.
+        OZR_Settings.ServerLoad();
 
         OZR_Bands.Probe();
-        OZR_Settings.ServerLoad();
         // Після проби: профілі перевіряються ПРОТИ виміряної сітки, і без неї
         // перевіряти нічим.
         OZR_Profiles.ServerLoad();
@@ -77,27 +73,13 @@ class OZR_Module : CF_ModuleWorld
         // НАСТУПНИЙ старт сервера, і каже, чи вже діє.
         OZR_EtherServer.Publish(OZR_Profiles.Get());
 
-        OZR_Hardware.Declare();
-        // Після ServerLoad, а не до: аплікатор перечитує ті самі конфіги, і
-        // реєструвати шлях до ще не прочитаного файлу нема сенсу.
-        OZR_AdminCfg.Declare();
-
-        OZ_PageRegistry.Register(OZR_Const.PAGE_RADIO,
-                                 "#STR_OZR_PAGE_RADIO",
-                                 "set:oz_pda image:radio",
-                                 new OZ_PdaHandlerRadio());
-
-        m_SyncTimer = new Timer(CALL_CATEGORY_SYSTEM);
-        m_SyncTimer.Run(SYNC_INTERVAL, this, "SyncTick", NULL, true);
-
-        OZR_Settings cfg = OZR_Settings.Get();
-        int channels = 0;
-        if (cfg && cfg.Channels)
-            channels = cfg.Channels.Count();
+        int profiles = 0;
+        OZR_Profiles cfg = OZR_Profiles.Get();
+        if (cfg && cfg.Radios)
+            profiles = cfg.Radios.Count();
 
         string summary = "radio loaded: bands=" + OZR_Bands.Count().ToString();
-        summary += " channels=" + channels.ToString();
-        summary += " modules=" + OZR_Hardware.Count().ToString();
+        summary += " profiles=" + profiles.ToString();
         OZR_Log.Info(summary);
     }
 
@@ -105,16 +87,8 @@ class OZR_Module : CF_ModuleWorld
     {
         super.OnMissionFinish(sender, args);
 
-        if (m_SyncTimer)
-            m_SyncTimer.Stop();
         if (m_PullTimer)
             m_PullTimer.Stop();
-    }
-
-    // Кличеться таймером на ім'я -- метод мусить бути видимим (не private).
-    void SyncTick()
-    {
-        OZR_Set.Sync();
     }
 
     // Просимо сітку, поки не отримаємо. Спроби скінченні: якщо сервер не
@@ -130,7 +104,7 @@ class OZR_Module : CF_ModuleWorld
         }
 
         m_PullsLeft--;
-        GetRPCManager().SendRPC(OZ_Const.MOD, OZR_Const.RPC_GRID_REQ, new Param1<int>(OZR_Const.SCHEMA_PROFILES), true);
+        GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_GRID_REQ, new Param1<int>(OZR_Const.SCHEMA_PROFILES), true);
     }
 
     // Гравець за особою відправника. Ходимо по онлайну, бо іншого зв'язку
@@ -182,7 +156,7 @@ class OZR_Module : CF_ModuleWorld
             return;
         }
 
-        GetRPCManager().SendRPC(OZ_Const.MOD, "OZR_GridRes", new Param1<string>(json), true, sender);
+        GetRPCManager().SendRPC(OZR_Const.MOD, "OZR_GridRes", new Param1<string>(json), true, sender);
     }
 
     // Пряма настройка на ділення. Клієнт присилає ЧИСЛО, і воно не має жодної
