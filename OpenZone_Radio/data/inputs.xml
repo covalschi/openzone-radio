@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<!--
+	Read by the ENGINE, wired up by CfgMods `inputs=`.
+
+	A mod gets ONE inputs file: a second one is simply not read. The PTT key
+	lives in OpenZone_PDA's file because the radio board is a PDA module and
+	the radio mod had no file of its own. This key is different -- handheld
+	sets are not PDA modules, so their key belongs to this mod.
+
+	<sorting> is what makes a key VISIBLE and REBINDABLE in Settings ->
+	Controls. Without it the input exists but the player can never find it.
+
+	`loc` is a BARE stringtable key: no leading # and no $.
+
+	Input names are global across every loaded mod, so they must be prefixed.
+
+	Default is K: unbound in vanilla DayZ, and far from the movement cluster,
+	which matters because this key is HELD while the player keeps running.
+-->
+<modded_inputs>
+	<inputs>
+		<actions>
+			<input name="UAOZRadioFreq" loc="oz_input_radio_freq"/>
+		</actions>
+		<sorting name="openzone" loc="oz_input_group">
+			<input name="UAOZRadioFreq"/>
+		</sorting>
+	</inputs>
+	<preset>
+		<input name="UAOZRadioFreq">
+			<btn name="kK"/>
+		</input>
+	</preset>
+</modded_inputs>

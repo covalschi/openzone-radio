@@ -38,6 +38,10 @@ class CfgMods
 
         dependencies[] = {"Game", "World", "Mission"};
 
+        // The frequency keypad's key. A mod gets exactly one inputs file --
+        // a second is not read -- so everything this mod binds goes in here.
+        inputs = "OpenZone_Radio/data/inputs.xml";
+
         class defs
         {
             class gameScriptModule

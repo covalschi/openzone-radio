@@ -1,0 +1,762 @@
+// Цифрова клавіатура частот.
+//
+// Кладеться меню OZR_FreqMenu, яке САМО центрує картку: розкладка тримає її в
+// нулі, бо вирівнювання по екрану залежить від роздільної здатності, а скрипт
+// її знає.
+//
+// СТРУКТУРА ПЛОСКА, І ЦЕ ВИМІР. Спершу тло й підпис лежали ВСЕРЕДИНІ кнопки,
+// як у сусідній розкладці цього ж мода. На екрані з цього не вийшло нічого:
+// жодного тла, навіть янтарної смуги TUNE, яку не сплутати ні з чим, -- а
+// власна hover-графіка кнопки малювала світлий прямокутник просто поверх
+// підпису тієї клавіші, під якою стояв курсор.
+//
+// Тому тло, кнопка й підпис -- СУСІДИ з однаковим прямокутником, і порядок
+// задає priority: тло 1, кнопка 2, підпис 3. На підписі ignorepointer 1, тож
+// кліки провалюються крізь нього на кнопку, а малюється він поверх неї.
+//
+// Кольори теж довелося міняти: вночі перша палітра була майже чорним на майже
+// чорному, і картку не було видно взагалі.
+//
+// Імена читає OZR_FreqMenu.c: Card, TitleText, FreqText, BandText, HintText,
+// Btn0..Btn9, BtnClear, BtnDot, BtnGo.
+
+PanelWidgetClass Card {
+ visible 1
+ position 0 0
+ size 340 504
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ color 0.055 0.059 0.071 0.965
+ style rover_sim_colorable
+ priority 1
+ {
+  PanelWidgetClass EdgeTop {
+   visible 1
+   ignorepointer 1
+   position 0 0
+   size 340 2
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.271 0.290 0.325 1
+   style rover_sim_colorable
+   priority 2
+  }
+  PanelWidgetClass EdgeBottom {
+   visible 1
+   ignorepointer 1
+   position 0 502
+   size 340 2
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.271 0.290 0.325 1
+   style rover_sim_colorable
+   priority 2
+  }
+  PanelWidgetClass EdgeLeft {
+   visible 1
+   ignorepointer 1
+   position 0 0
+   size 2 504
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.271 0.290 0.325 1
+   style rover_sim_colorable
+   priority 2
+  }
+  PanelWidgetClass EdgeRight {
+   visible 1
+   ignorepointer 1
+   position 338 0
+   size 2 504
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.271 0.290 0.325 1
+   style rover_sim_colorable
+   priority 2
+  }
+  PanelWidgetClass BtnCloseBg {
+   visible 1
+   ignorepointer 1
+   position 296 10
+   size 28 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.153 0.165 0.192 1
+   style rover_sim_colorable
+   priority 1
+  }
+  ButtonWidgetClass BtnClose {
+   visible 1
+   position 296 10
+   size 28 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   color 1 1 1 0
+   priority 2
+  }
+  TextWidgetClass BtnCloseLabel {
+   visible 1
+   ignorepointer 1
+   position 296 14
+   size 28 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "X"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 18
+   "text halign" center
+   "text valign" center
+   color 0.588 0.588 0.639 1
+   priority 3
+  }
+  TextWidgetClass TitleText {
+   visible 1
+   ignorepointer 1
+   position 16 14
+   size 274 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 16
+   "text halign" left
+   "text valign" center
+   color 0.588 0.588 0.639 1
+   priority 3
+  }
+  TextWidgetClass FreqText {
+   visible 1
+   ignorepointer 1
+   position 16 42
+   size 308 54
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 40
+   "text halign" left
+   "text valign" center
+   color 0.918 0.749 0.216 1
+   priority 3
+  }
+  TextWidgetClass BandText {
+   visible 1
+   ignorepointer 1
+   position 16 104
+   size 308 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 14
+   "text halign" left
+   "text valign" center
+   color 0.588 0.588 0.639 1
+   priority 3
+  }
+  TextWidgetClass HintText {
+   visible 1
+   ignorepointer 1
+   position 16 132
+   size 308 20
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 14
+   "text halign" left
+   "text valign" center
+   color 0.588 0.588 0.639 1
+   priority 3
+  }
+  PanelWidgetClass Btn1Bg {
+   visible 1
+   ignorepointer 1
+   position 22 168
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.153 0.165 0.192 1
+   style rover_sim_colorable
+   priority 1
+  }
+  ButtonWidgetClass Btn1 {
+   visible 1
+   position 22 168
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   color 1 1 1 0
+   priority 2
+  }
+  TextWidgetClass Btn1Label {
+   visible 1
+   ignorepointer 1
+   position 22 182
+   size 96 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "1"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 26
+   "text halign" center
+   "text valign" center
+   color 0.902 0.902 0.918 1
+   priority 3
+  }
+  PanelWidgetClass Btn2Bg {
+   visible 1
+   ignorepointer 1
+   position 128 168
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.153 0.165 0.192 1
+   style rover_sim_colorable
+   priority 1
+  }
+  ButtonWidgetClass Btn2 {
+   visible 1
+   position 128 168
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   color 1 1 1 0
+   priority 2
+  }
+  TextWidgetClass Btn2Label {
+   visible 1
+   ignorepointer 1
+   position 128 182
+   size 96 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "2"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 26
+   "text halign" center
+   "text valign" center
+   color 0.902 0.902 0.918 1
+   priority 3
+  }
+  PanelWidgetClass Btn3Bg {
+   visible 1
+   ignorepointer 1
+   position 234 168
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.153 0.165 0.192 1
+   style rover_sim_colorable
+   priority 1
+  }
+  ButtonWidgetClass Btn3 {
+   visible 1
+   position 234 168
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   color 1 1 1 0
+   priority 2
+  }
+  TextWidgetClass Btn3Label {
+   visible 1
+   ignorepointer 1
+   position 234 182
+   size 96 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "3"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 26
+   "text halign" center
+   "text valign" center
+   color 0.902 0.902 0.918 1
+   priority 3
+  }
+  PanelWidgetClass Btn4Bg {
+   visible 1
+   ignorepointer 1
+   position 22 234
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.153 0.165 0.192 1
+   style rover_sim_colorable
+   priority 1
+  }
+  ButtonWidgetClass Btn4 {
+   visible 1
+   position 22 234
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   color 1 1 1 0
+   priority 2
+  }
+  TextWidgetClass Btn4Label {
+   visible 1
+   ignorepointer 1
+   position 22 248
+   size 96 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "4"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 26
+   "text halign" center
+   "text valign" center
+   color 0.902 0.902 0.918 1
+   priority 3
+  }
+  PanelWidgetClass Btn5Bg {
+   visible 1
+   ignorepointer 1
+   position 128 234
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.153 0.165 0.192 1
+   style rover_sim_colorable
+   priority 1
+  }
+  ButtonWidgetClass Btn5 {
+   visible 1
+   position 128 234
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   color 1 1 1 0
+   priority 2
+  }
+  TextWidgetClass Btn5Label {
+   visible 1
+   ignorepointer 1
+   position 128 248
+   size 96 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "5"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 26
+   "text halign" center
+   "text valign" center
+   color 0.902 0.902 0.918 1
+   priority 3
+  }
+  PanelWidgetClass Btn6Bg {
+   visible 1
+   ignorepointer 1
+   position 234 234
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.153 0.165 0.192 1
+   style rover_sim_colorable
+   priority 1
+  }
+  ButtonWidgetClass Btn6 {
+   visible 1
+   position 234 234
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   color 1 1 1 0
+   priority 2
+  }
+  TextWidgetClass Btn6Label {
+   visible 1
+   ignorepointer 1
+   position 234 248
+   size 96 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "6"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 26
+   "text halign" center
+   "text valign" center
+   color 0.902 0.902 0.918 1
+   priority 3
+  }
+  PanelWidgetClass Btn7Bg {
+   visible 1
+   ignorepointer 1
+   position 22 300
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.153 0.165 0.192 1
+   style rover_sim_colorable
+   priority 1
+  }
+  ButtonWidgetClass Btn7 {
+   visible 1
+   position 22 300
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   color 1 1 1 0
+   priority 2
+  }
+  TextWidgetClass Btn7Label {
+   visible 1
+   ignorepointer 1
+   position 22 314
+   size 96 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "7"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 26
+   "text halign" center
+   "text valign" center
+   color 0.902 0.902 0.918 1
+   priority 3
+  }
+  PanelWidgetClass Btn8Bg {
+   visible 1
+   ignorepointer 1
+   position 128 300
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.153 0.165 0.192 1
+   style rover_sim_colorable
+   priority 1
+  }
+  ButtonWidgetClass Btn8 {
+   visible 1
+   position 128 300
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   color 1 1 1 0
+   priority 2
+  }
+  TextWidgetClass Btn8Label {
+   visible 1
+   ignorepointer 1
+   position 128 314
+   size 96 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "8"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 26
+   "text halign" center
+   "text valign" center
+   color 0.902 0.902 0.918 1
+   priority 3
+  }
+  PanelWidgetClass Btn9Bg {
+   visible 1
+   ignorepointer 1
+   position 234 300
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.153 0.165 0.192 1
+   style rover_sim_colorable
+   priority 1
+  }
+  ButtonWidgetClass Btn9 {
+   visible 1
+   position 234 300
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   color 1 1 1 0
+   priority 2
+  }
+  TextWidgetClass Btn9Label {
+   visible 1
+   ignorepointer 1
+   position 234 314
+   size 96 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "9"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 26
+   "text halign" center
+   "text valign" center
+   color 0.902 0.902 0.918 1
+   priority 3
+  }
+  PanelWidgetClass BtnClearBg {
+   visible 1
+   ignorepointer 1
+   position 22 366
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.153 0.165 0.192 1
+   style rover_sim_colorable
+   priority 1
+  }
+  ButtonWidgetClass BtnClear {
+   visible 1
+   position 22 366
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   color 1 1 1 0
+   priority 2
+  }
+  TextWidgetClass BtnClearLabel {
+   visible 1
+   ignorepointer 1
+   position 22 380
+   size 96 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "C"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 26
+   "text halign" center
+   "text valign" center
+   color 0.902 0.902 0.918 1
+   priority 3
+  }
+  PanelWidgetClass Btn0Bg {
+   visible 1
+   ignorepointer 1
+   position 128 366
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.153 0.165 0.192 1
+   style rover_sim_colorable
+   priority 1
+  }
+  ButtonWidgetClass Btn0 {
+   visible 1
+   position 128 366
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   color 1 1 1 0
+   priority 2
+  }
+  TextWidgetClass Btn0Label {
+   visible 1
+   ignorepointer 1
+   position 128 380
+   size 96 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "0"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 26
+   "text halign" center
+   "text valign" center
+   color 0.902 0.902 0.918 1
+   priority 3
+  }
+  PanelWidgetClass BtnDotBg {
+   visible 1
+   ignorepointer 1
+   position 234 366
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.153 0.165 0.192 1
+   style rover_sim_colorable
+   priority 1
+  }
+  ButtonWidgetClass BtnDot {
+   visible 1
+   position 234 366
+   size 96 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   color 1 1 1 0
+   priority 2
+  }
+  TextWidgetClass BtnDotLabel {
+   visible 1
+   ignorepointer 1
+   position 234 380
+   size 96 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "."
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 26
+   "text halign" center
+   "text valign" center
+   color 0.902 0.902 0.918 1
+   priority 3
+  }
+  PanelWidgetClass BtnGoBg {
+   visible 1
+   ignorepointer 1
+   position 22 432
+   size 308 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.918 0.749 0.216 1
+   style rover_sim_colorable
+   priority 1
+  }
+  ButtonWidgetClass BtnGo {
+   visible 1
+   position 22 432
+   size 308 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   color 1 1 1 0
+   priority 2
+  }
+  TextWidgetClass BtnGoLabel {
+   visible 1
+   ignorepointer 1
+   position 22 446
+   size 308 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "TUNE"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 26
+   "text halign" center
+   "text valign" center
+   color 0.055 0.059 0.071 1
+   priority 3
+  }
+ }
+}

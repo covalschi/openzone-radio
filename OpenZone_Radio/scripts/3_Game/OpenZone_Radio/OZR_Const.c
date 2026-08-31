@@ -39,4 +39,31 @@ class OZR_Const
     // мають нічого спільного, крім ефіру.
     static const string PROFILES         = "$profile:OpenZone\\RadioProfiles.json";
     static const int    SCHEMA_PROFILES  = 1;
+
+    // Клавіша цифрової клавіатури частот. Оголошена у ВЛАСНОМУ inputs.xml
+    // цього мода: ручна рація -- не модуль КПК.
+    static const string INPUT_FREQ = "UAOZRadioFreq";
+
+    // Ідентифікатор меню.
+    //
+    // МАЄ БУТИ МАЛИМ. Виміряно сусіднім модом і записано в OZ_PdaConst: із
+    // великим числом EnterScriptedMenu просто повертає NULL, а
+    // Mission.CreateScriptedMenu навіть не кличеться -- у лозі видно виклики
+    // з ванільними 11 і 17, і жодного з шестизначним. Тому не «беремо високе,
+    // щоб ні з ким не зіткнутись», а тиснемось поруч із КПК (131, 132).
+    //
+    // Реєстру id у рушії немає, тож зіткнення непереборне -- і воно ВЖЕ
+    // сталося: 133 виявився зайнятий OZ_LinkMenu ядра, і меню відкривалось
+    // чуже, мовчки. Виглядало це як «клавіатура не працює», бо super
+    // .CreateScriptedMenu віддавав чужий екземпляр раніше, ніж черга доходила
+    // до нашого. Тому OZR_FreqInput після відкриття перевіряє, що екземпляр
+    // саме наш, і каже вголос, якщо ні.
+    //
+    // Зайнято сім'єю OpenZone: 131 КПК, 132 його HUD-редактор, 133 прив'язка.
+    static const int    MENU_FREQ  = 134;
+
+    // RPC цього мода. Імена глобальні на весь процес, тому з префіксом.
+    static const string RPC_GRID_REQ = "OZR_GridReq";
+    static const string RPC_GRID_RES = "OZR_GridRes";
+    static const string RPC_TUNE     = "OZR_TuneReq";
 }

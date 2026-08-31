@@ -36,12 +36,35 @@ class OZR_Module : CF_ModuleWorld
         EnableMissionFinish();
     }
 
+    // Клієнтський бік: тягне сітку і тримає таймер, поки не дотягне.
+    private ref Timer m_PullTimer;
+    private int m_PullsLeft = 0;
+    private static const float PULL_INTERVAL = 2.0;
+    private static const int   PULL_TRIES    = 10;
+
     override void OnMissionStart(Class sender, CF_EventArgs args)
     {
         super.OnMissionStart(sender, args);
 
+        // Клієнт ТЯГНЕ сам, а не чекає, поки штовхнуть. Причина та сама, що
+        // записана в ядрі поруч із OZ_Rpc.Hello(): серверний хук на конекті
+        // спрацьовує раніше, ніж клієнт устигає зареєструвати обробник, і
+        // пакет іде в нікуди. Тяга від порядку не залежить.
+        if (GetGame().IsClient())
+        {
+            GetRPCManager().AddRPC(OZ_Const.MOD, OZR_Const.RPC_GRID_RES, this, SingleplayerExecutionType.Client);
+
+            m_PullsLeft = PULL_TRIES;
+            m_PullTimer = new Timer(CALL_CATEGORY_SYSTEM);
+            m_PullTimer.Run(PULL_INTERVAL, this, "PullTick", NULL, true);
+            PullTick();
+        }
+
         if (!GetGame().IsServer())
             return;
+
+        GetRPCManager().AddRPC(OZ_Const.MOD, OZR_Const.RPC_GRID_REQ, this, SingleplayerExecutionType.Server);
+        GetRPCManager().AddRPC(OZ_Const.MOD, OZR_Const.RPC_TUNE,     this, SingleplayerExecutionType.Server);
 
         OZR_Bands.Probe();
         OZR_Settings.ServerLoad();
@@ -75,11 +98,171 @@ class OZR_Module : CF_ModuleWorld
 
         if (m_SyncTimer)
             m_SyncTimer.Stop();
+        if (m_PullTimer)
+            m_PullTimer.Stop();
     }
 
     // Кличеться таймером на ім'я -- метод мусить бути видимим (не private).
     void SyncTick()
     {
         OZR_Set.Sync();
+    }
+
+    // Просимо сітку, поки не отримаємо. Спроби скінченні: якщо сервер не
+    // відповідає, це не привід сипати пакетами до кінця сесії -- підпис
+    // просто лишиться порожнім, і це чесніше за вигадане число.
+    void PullTick()
+    {
+        if (OZR_ClientGrid.Ready() || m_PullsLeft <= 0)
+        {
+            if (m_PullTimer)
+                m_PullTimer.Stop();
+            return;
+        }
+
+        m_PullsLeft--;
+        GetRPCManager().SendRPC(OZ_Const.MOD, OZR_Const.RPC_GRID_REQ, new Param1<int>(OZR_Const.SCHEMA_PROFILES), true);
+    }
+
+    // Гравець за особою відправника. Ходимо по онлайну, бо іншого зв'язку
+    // між PlayerIdentity й сутністю на сервері немає.
+    private PlayerBase OZR_PlayerOf(PlayerIdentity who)
+    {
+        if (!who)
+            return null;
+
+        array<Man> players = new array<Man>();
+        GetGame().GetPlayers(players);
+
+        for (int i = 0; i < players.Count(); i++)
+        {
+            PlayerBase p = PlayerBase.Cast(players[i]);
+            if (p && p.GetIdentity() && p.GetIdentity().GetId() == who.GetId())
+                return p;
+        }
+        return null;
+    }
+
+    // ----------------------------------------------------------------- RPC
+    //
+    // Ім'я методу мусить збігатися з рядком у AddRPC посимвольно, метод --
+    // не статичний, і саме з цими чотирма параметрами в цьому порядку.
+
+    void OZR_GridReq(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        if (type != CallType.Server || !sender)
+            return;
+
+        OZR_GridInfo info = new OZR_GridInfo();
+        info.BaseMHz = OZR_Grid.MHzAt(0);
+        info.StepMHz = OZR_Grid.StepMHz();
+        info.Count   = OZR_Grid.Count();
+
+        OZR_Profiles cfg = OZR_Profiles.Get();
+        if (cfg && cfg.Radios)
+        {
+            for (int i = 0; i < cfg.Radios.Count(); i++)
+                info.Radios.Insert(cfg.Radios[i]);
+        }
+
+        string json;
+        string err;
+        if (!JsonFileLoader<OZR_GridInfo>.MakeData(info, json, err, false))
+        {
+            OZR_Log.Error("grid serialise failed: " + err);
+            return;
+        }
+
+        GetRPCManager().SendRPC(OZ_Const.MOD, "OZR_GridRes", new Param1<string>(json), true, sender);
+    }
+
+    // Пряма настройка на ділення. Клієнт присилає ЧИСЛО, і воно не має жодної
+    // ваги, поки сервер не перевірив його проти профілю тієї рації, яка
+    // справді в руках у цього гравця. Інакше клавіатура частот була б
+    // способом сісти на чужу смугу, минаючи і профіль, і саму рацію.
+    void OZR_TuneReq(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        if (type != CallType.Server || !sender)
+            return;
+
+        Param1<int> p = new Param1<int>(0);
+        if (!ctx.Read(p))
+            return;
+
+        PlayerBase player = OZR_PlayerOf(sender);
+        if (!player || !player.GetHumanInventory())
+        {
+            OZR_Log.Dbg("tune refused: no player for this identity");
+            return;
+        }
+
+        TransmitterBase radio = TransmitterBase.Cast(player.GetHumanInventory().GetEntityInHands());
+        if (!radio)
+        {
+            OZR_Log.Dbg("tune refused: nothing that transmits in hands");
+            return;
+        }
+
+        OZR_RadioProfile prof = OZR_Profiles.For(radio.GetType());
+        if (!prof || !OZR_Grid.Ready())
+        {
+            OZR_Log.Dbg("tune refused: no profile for " + radio.GetType() + " or the grid is not even");
+            return;
+        }
+
+        int want = p.param1;
+        int lo   = OZR_Grid.IndexOf(prof.MinMHz);
+        int hi   = OZR_Grid.IndexOf(prof.MaxMHz);
+
+        if (want < lo || want > hi)
+        {
+            OZR_Log.Dbg("tune refused: index " + want.ToString() + " is outside " + lo.ToString() + ".." + hi.ToString());
+            return;
+        }
+
+        // Ділення мусить лежати на ґратці САМОГО профілю, а не просто в його
+        // межах: інакше рація стане між своїми каналами й не зустріне нікого.
+        int stride = 1;
+        float gs = OZR_Grid.StepMHz();
+        if (gs > 0)
+            stride = Math.Round(prof.StepMHz / gs);
+        if (stride < 1)
+            stride = 1;
+
+        if (((want - lo) % stride) != 0)
+        {
+            OZR_Log.Dbg("tune refused: index " + want.ToString() + " is between this set's own channels");
+            return;
+        }
+
+        radio.SetFrequencyByIndex(want);
+        OZR_Log.Dbg("tuned " + radio.GetType() + " to index " + want.ToString() + " = " + OZR_Grid.MHzAt(want).ToString() + " MHz");
+    }
+
+    void OZR_GridRes(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        if (type != CallType.Client)
+            return;
+
+        Param1<string> p = new Param1<string>("");
+        if (!ctx.Read(p))
+            return;
+
+        OZR_GridInfo info;
+        string err;
+        if (!JsonFileLoader<OZR_GridInfo>.LoadData(p.param1, info, err) || !info)
+        {
+            OZR_Log.Error("grid parse failed: " + err);
+            return;
+        }
+
+        OZR_ClientGrid.Set(info);
+
+        string got = "grid received: " + info.Count.ToString() + " divisions from ";
+        got += info.BaseMHz.ToString() + " MHz by " + info.StepMHz.ToString();
+        OZR_Log.Info(got);
+
+        if (m_PullTimer)
+            m_PullTimer.Stop();
     }
 }
