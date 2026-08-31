@@ -1,0 +1,652 @@
+// Панель «RADIO» в адмiнському вiкнi OpenZone (VPP).
+//
+// ЗГЕНЕРОВАНО scratchpad/genradiovpp.py -- правити генератор, не це.
+//
+// Лiворуч список профiлiв, праворуч форма одного. Дальнiсть -- ТЕКСТ, не
+// поле: `range` живе в CfgVehicles i читається рушiєм, а скрипт має лише
+// ConfigGetFloat i жодного ConfigSet. Поле, яке нiчого не змiнює, гiрше за
+// його вiдсутнiсть, тому воно показує й мовчить.
+//
+// Жодних лапок усерединi text-значень -- парсер розмiтки висне.
+//
+// Iмена читає OZR_VppPane.c.
+
+FrameWidgetClass OZ_RadioVppPane {
+ visible 0
+ position 0 96
+ size 1000 524
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ priority 2
+ {
+ PanelWidgetClass SecRadListBar {
+  position 20 4
+  size 3 16
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  color 1 0.478 0.102 1
+  priority 3
+  style rover_sim_colorable
+ }
+ TextWidgetClass SecRadListLbl {
+  position 32 2
+  size 420 20
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  text "RADIO PROFILES"
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  color 0.788 0.788 0.816 1
+  priority 4
+ }
+ TextWidgetClass RadGrid {
+  position 20 26
+  size 560 20
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  text "grid: waiting for the server"
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  color 0.451 0.463 0.494 1
+  priority 4
+ }
+ TextListboxWidgetClass RadList {
+  position 20 52
+  size 330 300
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  style NoScrollBar
+  "title visible" 0
+  "highlight row" 1
+  lines 10
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  color 0.788 0.788 0.816 1
+  priority 4
+ }
+ ButtonWidgetClass BtnRadNew {
+  position 20 360
+  size 160 28
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  text ""
+  priority 4
+  {
+   PanelWidgetClass BtnRadNewEdge {
+    position -1 -1
+    size 162 30
+    hexactpos 1
+    vexactpos 1
+    hexactsize 1
+    vexactsize 1
+    visible 1
+    ignorepointer 1
+    color 0.2 0.3 0.42 1
+    priority 4
+    style rover_sim_colorable
+   }
+   PanelWidgetClass BtnRadNewFill {
+    position 0 0
+    size 160 28
+    hexactpos 1
+    vexactpos 1
+    hexactsize 1
+    vexactsize 1
+    visible 1
+    ignorepointer 1
+    color 0.086 0.094 0.106 1
+    priority 5
+    style rover_sim_colorable
+   }
+   TextWidgetClass BtnRadNewText {
+    position 0 4
+    size 160 20
+    hexactpos 1
+    vexactpos 1
+    hexactsize 1
+    vexactsize 1
+    visible 1
+    ignorepointer 1
+    text "NEW"
+    font "gui/fonts/MetronBook14"
+    "exact text" 1
+    "text halign" center
+    color 0.788 0.788 0.816 1
+    priority 6
+   }
+  }
+ }
+ ButtonWidgetClass BtnRadDel {
+  position 190 360
+  size 160 28
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  text ""
+  priority 4
+  {
+   PanelWidgetClass BtnRadDelEdge {
+    position -1 -1
+    size 162 30
+    hexactpos 1
+    vexactpos 1
+    hexactsize 1
+    vexactsize 1
+    visible 1
+    ignorepointer 1
+    color 0.42 0.22 0.2 1
+    priority 4
+    style rover_sim_colorable
+   }
+   PanelWidgetClass BtnRadDelFill {
+    position 0 0
+    size 160 28
+    hexactpos 1
+    vexactpos 1
+    hexactsize 1
+    vexactsize 1
+    visible 1
+    ignorepointer 1
+    color 0.086 0.094 0.106 1
+    priority 5
+    style rover_sim_colorable
+   }
+   TextWidgetClass BtnRadDelText {
+    position 0 4
+    size 160 20
+    hexactpos 1
+    vexactpos 1
+    hexactsize 1
+    vexactsize 1
+    visible 1
+    ignorepointer 1
+    text "DELETE"
+    font "gui/fonts/MetronBook14"
+    "exact text" 1
+    "text halign" center
+    color 0.788 0.788 0.816 1
+    priority 6
+   }
+  }
+ }
+ PanelWidgetClass SecRadFormBar {
+  position 380 4
+  size 3 16
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  color 1 0.478 0.102 1
+  priority 3
+  style rover_sim_colorable
+ }
+ TextWidgetClass SecRadFormLbl {
+  position 392 2
+  size 420 20
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  text "SELECTED PROFILE"
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  color 0.788 0.788 0.816 1
+  priority 4
+ }
+ TextWidgetClass L_RadF_Class {
+  position 380 55
+  size 150 20
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  text "Item class"
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  color 0.545 0.561 0.596 1
+  priority 4
+ }
+ EditBoxWidgetClass RadF_Class {
+  position 530 52
+  size 330 24
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  color 0.788 0.788 0.816 1
+  text ""
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  priority 4
+ }
+ TextWidgetClass L_RadF_Min {
+  position 380 89
+  size 150 20
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  text "Band from, MHz"
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  color 0.545 0.561 0.596 1
+  priority 4
+ }
+ EditBoxWidgetClass RadF_Min {
+  position 530 86
+  size 200 24
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  color 0.788 0.788 0.816 1
+  text ""
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  priority 4
+ }
+ TextWidgetClass L_RadF_Max {
+  position 380 123
+  size 150 20
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  text "Band to, MHz"
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  color 0.545 0.561 0.596 1
+  priority 4
+ }
+ EditBoxWidgetClass RadF_Max {
+  position 530 120
+  size 200 24
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  color 0.788 0.788 0.816 1
+  text ""
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  priority 4
+ }
+ TextWidgetClass L_RadF_Step {
+  position 380 157
+  size 150 20
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  text "Step, MHz"
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  color 0.545 0.561 0.596 1
+  priority 4
+ }
+ EditBoxWidgetClass RadF_Step {
+  position 530 154
+  size 200 24
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  color 0.788 0.788 0.816 1
+  text ""
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  priority 4
+ }
+ TextWidgetClass L_RadF_Range {
+  position 380 199
+  size 150 20
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  text "Range, m"
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  color 0.545 0.561 0.596 1
+  priority 4
+ }
+ TextWidgetClass RadF_Range {
+  position 530 199
+  size 200 20
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  text "-"
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  color 0.788 0.788 0.816 1
+  priority 4
+ }
+ TextWidgetClass RadF_RangeNote {
+  position 380 222
+  size 580 20
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  text "read only: range lives in the item config and the engine reads it there"
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  color 0.451 0.463 0.494 1
+  priority 4
+ }
+ PanelWidgetClass SecRadCheckBar {
+  position 380 256
+  size 3 16
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  color 1 0.478 0.102 1
+  priority 3
+  style rover_sim_colorable
+ }
+ TextWidgetClass SecRadCheckLbl {
+  position 392 254
+  size 420 20
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  text "WHAT THIS PROFILE COMES OUT AS"
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  color 0.788 0.788 0.816 1
+  priority 4
+ }
+ TextWidgetClass RadF_Chan {
+  position 380 282
+  size 580 20
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  text "-"
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  color 0.788 0.788 0.816 1
+  priority 4
+ }
+ TextWidgetClass RadF_Fit1 {
+  position 380 304
+  size 580 20
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  text "-"
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  color 0.788 0.788 0.816 1
+  priority 4
+ }
+ TextWidgetClass RadF_Fit2 {
+  position 380 326
+  size 580 20
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  text "-"
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  color 0.788 0.788 0.816 1
+  priority 4
+ }
+ TextWidgetClass RadF_Fit3 {
+  position 380 348
+  size 580 20
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  text "-"
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  color 0.788 0.788 0.816 1
+  priority 4
+ }
+ ButtonWidgetClass BtnRadCheck {
+  position 380 400
+  size 190 28
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  text ""
+  priority 4
+  {
+   PanelWidgetClass BtnRadCheckEdge {
+    position -1 -1
+    size 192 30
+    hexactpos 1
+    vexactpos 1
+    hexactsize 1
+    vexactsize 1
+    visible 1
+    ignorepointer 1
+    color 0.2 0.3 0.42 1
+    priority 4
+    style rover_sim_colorable
+   }
+   PanelWidgetClass BtnRadCheckFill {
+    position 0 0
+    size 190 28
+    hexactpos 1
+    vexactpos 1
+    hexactsize 1
+    vexactsize 1
+    visible 1
+    ignorepointer 1
+    color 0.086 0.094 0.106 1
+    priority 5
+    style rover_sim_colorable
+   }
+   TextWidgetClass BtnRadCheckText {
+    position 0 4
+    size 190 20
+    hexactpos 1
+    vexactpos 1
+    hexactsize 1
+    vexactsize 1
+    visible 1
+    ignorepointer 1
+    text "CHECK"
+    font "gui/fonts/MetronBook14"
+    "exact text" 1
+    "text halign" center
+    color 0.788 0.788 0.816 1
+    priority 6
+   }
+  }
+ }
+ ButtonWidgetClass BtnRadSave {
+  position 580 400
+  size 190 28
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  text ""
+  priority 4
+  {
+   PanelWidgetClass BtnRadSaveEdge {
+    position -1 -1
+    size 192 30
+    hexactpos 1
+    vexactpos 1
+    hexactsize 1
+    vexactsize 1
+    visible 1
+    ignorepointer 1
+    color 0.2 0.35 0.24 1
+    priority 4
+    style rover_sim_colorable
+   }
+   PanelWidgetClass BtnRadSaveFill {
+    position 0 0
+    size 190 28
+    hexactpos 1
+    vexactpos 1
+    hexactsize 1
+    vexactsize 1
+    visible 1
+    ignorepointer 1
+    color 0.086 0.094 0.106 1
+    priority 5
+    style rover_sim_colorable
+   }
+   TextWidgetClass BtnRadSaveText {
+    position 0 4
+    size 190 20
+    hexactpos 1
+    vexactpos 1
+    hexactsize 1
+    vexactsize 1
+    visible 1
+    ignorepointer 1
+    text "SAVE ALL"
+    font "gui/fonts/MetronBook14"
+    "exact text" 1
+    "text halign" center
+    color 0.788 0.788 0.816 1
+    priority 6
+   }
+  }
+ }
+ ButtonWidgetClass BtnRadReload {
+  position 780 400
+  size 180 28
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  text ""
+  priority 4
+  {
+   PanelWidgetClass BtnRadReloadEdge {
+    position -1 -1
+    size 182 30
+    hexactpos 1
+    vexactpos 1
+    hexactsize 1
+    vexactsize 1
+    visible 1
+    ignorepointer 1
+    color 0.3 0.3 0.3 1
+    priority 4
+    style rover_sim_colorable
+   }
+   PanelWidgetClass BtnRadReloadFill {
+    position 0 0
+    size 180 28
+    hexactpos 1
+    vexactpos 1
+    hexactsize 1
+    vexactsize 1
+    visible 1
+    ignorepointer 1
+    color 0.086 0.094 0.106 1
+    priority 5
+    style rover_sim_colorable
+   }
+   TextWidgetClass BtnRadReloadText {
+    position 0 4
+    size 180 20
+    hexactpos 1
+    vexactpos 1
+    hexactsize 1
+    vexactsize 1
+    visible 1
+    ignorepointer 1
+    text "RELOAD"
+    font "gui/fonts/MetronBook14"
+    "exact text" 1
+    "text halign" center
+    color 0.788 0.788 0.816 1
+    priority 6
+   }
+  }
+ }
+ TextWidgetClass RadHint {
+  position 20 444
+  size 960 20
+  hexactpos 1
+  vexactpos 1
+  hexactsize 1
+  vexactsize 1
+  visible 1
+  ignorepointer 1
+  text ""
+  font "gui/fonts/MetronBook14"
+  "exact text" 1
+  color 1 0.478 0.102 1
+  priority 4
+ }
+ }
+}

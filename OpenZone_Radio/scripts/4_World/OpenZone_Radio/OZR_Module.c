@@ -73,6 +73,9 @@ class OZR_Module : CF_ModuleWorld
         // перевіряти нічим.
         OZR_Profiles.ServerLoad();
         OZR_Hardware.Declare();
+        // Після ServerLoad, а не до: аплікатор перечитує ті самі конфіги, і
+        // реєструвати шлях до ще не прочитаного файлу нема сенсу.
+        OZR_AdminCfg.Declare();
 
         OZ_PageRegistry.Register(OZR_Const.PAGE_RADIO,
                                  "#STR_OZR_PAGE_RADIO",

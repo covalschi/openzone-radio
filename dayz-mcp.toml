@@ -10,7 +10,9 @@
 name = "openzone-radio"
 
 [build]
-mods = ["OpenZone_Radio"]
+# Вкладка VPP -- окремий НЕОБОВ'ЯЗКОВИЙ pbo: requiredAddons у ньому жорсткі,
+# і сервер без VPP мусить крутити рацію як ні в чому не бувало.
+mods = ["OpenZone_Radio", "OpenZone_Radio_VPP"]
 
 [expect]
 ready_line   = "radio loaded"

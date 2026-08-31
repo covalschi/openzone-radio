@@ -95,6 +95,23 @@ class OZR_ClientGrid
         return s_Info.Count;
     }
 
+    // Віддаються ПРЯМО, а не через різницю сусідніх ділень: віднімання двох
+    // близьких float дає 0.01249695 замість 0.0125, і на цьому вже раз
+    // погоріла математика кроку.
+    static float BaseMHz()
+    {
+        if (!Ready())
+            return 0;
+        return s_Info.BaseMHz;
+    }
+
+    static float StepMHz()
+    {
+        if (!Ready())
+            return 0;
+        return s_Info.StepMHz;
+    }
+
     static OZR_RadioProfile For(string className)
     {
         if (!Ready() || !s_Info.Radios)
