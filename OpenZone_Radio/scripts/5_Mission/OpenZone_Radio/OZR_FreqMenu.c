@@ -22,6 +22,11 @@ class OZR_FreqMenu extends UIScriptedMenu
     private string m_Typed = "";
     private float  m_Since = 0;
 
+    // Перетягування: зсув між курсором і кутом картки в мить захоплення.
+    private bool   m_Dragging = false;
+    private float  m_GrabX = 0;
+    private float  m_GrabY = 0;
+
     private TransmitterBase m_Radio;
     private ref OZR_RadioProfile m_Profile;
 
@@ -65,20 +70,101 @@ class OZR_FreqMenu extends UIScriptedMenu
         // Клавіатуру не чіпаємо: UseKeyboard() лишається false, тож
         // ChangeGameFocus для неї не викликається, і біг живий.
         LockControls();
+        SetFocus(layoutRoot);
 
-        Centre();
+        // Без цього клік доходить і до меню, І ДО ГРИ: кнопка натискається, а
+        // разом із нею спрацьовує дія в світі -- та сама рація вмикається й
+        // вимикається. LockControls дає курсор, але не забирає у гри саму дію.
+        //
+        // Глушимо РІВНО мишачі групи. "movement" навмисне НЕ чіпаємо -- саме
+        // на цьому тримається вимога бігати з відкритою клавіатурою, і саме
+        // цим ми відрізняємось від КПК, який глушить усе гуртом ("menu").
+        GetGame().GetMission().AddActiveInputExcludes(Excludes());
+
+        Place();
         Grab();
         Paint();
+    }
+
+    // Рівно мишачі групи. "movement" тут немає навмисне -- див. OnShow.
+    private static array<string> Excludes()
+    {
+        array<string> a = new array<string>();
+        a.Insert("aiming");
+        a.Insert("actions");
+        a.Insert("optics");
+        a.Insert("hotkey");
+        return a;
     }
 
     override void OnHide()
     {
         super.OnHide();
+
+        m_Dragging = false;
+        GetGame().GetMission().RemoveActiveInputExcludes(Excludes(), true);
         UnlockControls();
 
         // Кажемо опитувачу самі: FindMenu(MENU_FREQ) це меню не бачить, тож
         // питати менеджера, чи ми ще відкриті, марно.
         OZR_FreqInput.Forget();
+    }
+
+    // Куди поставити картку: туди, куди її перетягнули востаннє, а якщо ще
+    // нікуди -- по центру.
+    private void Place()
+    {
+        if (!m_Card)
+            return;
+
+        // LoadFile віддає ще й текст помилки -- третій параметр обов'язковий.
+        // Відсутній файл тут не помилка, а перший запуск, тож мовчимо.
+        OZR_KeypadPos saved;
+        string err;
+        if (JsonFileLoader<OZR_KeypadPos>.LoadFile(OZR_Const.KEYPAD_POS, saved, err) && saved && saved.Set)
+        {
+            m_Card.SetPos(saved.X, saved.Y);
+            Clamp();
+            return;
+        }
+
+        Centre();
+    }
+
+    private void SavePos()
+    {
+        if (!m_Card)
+            return;
+
+        float x, y;
+        m_Card.GetPos(x, y);
+
+        OZR_KeypadPos p = new OZR_KeypadPos();
+        p.Set = true;
+        p.X   = x;
+        p.Y   = y;
+        string err;
+        if (!JsonFileLoader<OZR_KeypadPos>.SaveFile(OZR_Const.KEYPAD_POS, p, err))
+            OZR_Log.Warn("keypad position not saved: " + err);
+    }
+
+    // Не даємо картці піти за край: вікно, за яке більше не вхопитись, --
+    // це вікно, яке більше не закрити.
+    private void Clamp()
+    {
+        float cw, ch, x, y;
+        m_Card.GetScreenSize(cw, ch);
+        m_Card.GetPos(x, y);
+
+        int sw, sh;
+        GetScreenSize(sw, sh);
+
+        if (x < 0) x = 0;
+        if (y < 0) y = 0;
+        if (x > sw - cw) x = sw - cw;
+        if (y > sh - ch) y = sh - ch;
+
+        m_Card.SetPos(x, y);
     }
 
     // Картку центрує скрипт, а не розкладка: вирівнювання по екрану залежить
@@ -160,6 +246,34 @@ class OZR_FreqMenu extends UIScriptedMenu
 
         if (m_Hint)
             m_Hint.SetText("#STR_OZR_KEYPAD_HINT");
+    }
+
+    // Перетягування за верхню смугу. Тягнемо КАРТКУ, а не окремі віджети:
+    // вони всі її діти, тож рухаються разом.
+    override bool OnMouseButtonDown(Widget w, int x, int y, int button)
+    {
+        if (w && button == 0 && w.GetName() == "DragBar")
+        {
+            float cx, cy;
+            m_Card.GetPos(cx, cy);
+            m_GrabX    = x - cx;
+            m_GrabY    = y - cy;
+            m_Dragging = true;
+            return true;
+        }
+        return super.OnMouseButtonDown(w, x, y, button);
+    }
+
+    override bool OnMouseButtonUp(Widget w, int x, int y, int button)
+    {
+        if (m_Dragging)
+        {
+            m_Dragging = false;
+            Clamp();
+            SavePos();
+            return true;
+        }
+        return super.OnMouseButtonUp(w, x, y, button);
     }
 
     override bool OnClick(Widget w, int x, int y, int button)
@@ -319,6 +433,16 @@ class OZR_FreqMenu extends UIScriptedMenu
     override void Update(float timeslice)
     {
         super.Update(timeslice);
+
+        // Тягнемо за курсором. Події «миша поїхала» у віджета немає, тож
+        // позицію читаємо самі, поки кнопку тримають.
+        if (m_Dragging && m_Card)
+        {
+            int mx, my;
+            GetMousePos(mx, my);
+            m_Card.SetPos(mx - m_GrabX, my - m_GrabY);
+            return;
+        }
 
         m_Since = m_Since + timeslice;
         if (m_Since < 0.25)

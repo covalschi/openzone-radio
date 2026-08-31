@@ -40,6 +40,10 @@ class OZR_Const
     static const string PROFILES         = "$profile:OpenZone\\RadioProfiles.json";
     static const int    SCHEMA_PROFILES  = 1;
 
+    // Куди гравець перетягнув клавіатуру. КЛІЄНТСЬКИЙ файл: $profile: на
+    // клієнті -- це його власний профіль, і сервера це не стосується.
+    static const string KEYPAD_POS = "$profile:OpenZone\\RadioKeypad.json";
+
     // Клавіша цифрової клавіатури частот. Оголошена у ВЛАСНОМУ inputs.xml
     // цього мода: ручна рація -- не модуль КПК.
     static const string INPUT_FREQ = "UAOZRadioFreq";

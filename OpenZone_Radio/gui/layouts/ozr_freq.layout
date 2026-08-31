@@ -32,6 +32,18 @@ PanelWidgetClass Card {
  style rover_sim_colorable
  priority 1
  {
+  PanelWidgetClass DragBar {
+   visible 1
+   position 0 0
+   size 290 38
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.055 0.059 0.071 0.965
+   style rover_sim_colorable
+   priority 1
+  }
   PanelWidgetClass EdgeTop {
    visible 1
    ignorepointer 1
