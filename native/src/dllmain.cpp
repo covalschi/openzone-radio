@@ -31,6 +31,15 @@ struct Config
 static Config g_config = { 87.8, 0.2, 64 };
 static wchar_t g_dir[MAX_PATH] = L"";
 
+// The server's -profiles directory, or empty when it named none.
+//
+// This is the one place the MOD can write and this DLL cannot reach any
+// other way: script file access in DayZ is confined to $profile:. So the
+// grid is looked for THERE FIRST, which is what makes an in-game admin
+// panel able to set it at all; the copy beside the DLL stays as the
+// fallback and as the shipped default.
+static wchar_t g_profiles[MAX_PATH] = L"";
+
 // ------------------------------------------------------------------- the log
 
 // Written beside the DLL. A mod that quietly does nothing is the worst outcome
@@ -95,30 +104,111 @@ static bool ReadNumber(const char* text, const char* key, double* out)
     return true;
 }
 
-static void LoadConfig()
+// Pull -profiles= out of our own command line.
+//
+// Every launcher passes it, but the form varies: quoted or bare, with or
+// without a trailing slash, absolute or relative to the working directory.
+// All of those are handled here, because a path that is ALMOST right reads
+// exactly like a missing file.
+//
+// Tolerant of failure on purpose: no -profiles simply means there is no
+// admin-editable copy, which is the state every stand was in until now.
+static void FindProfilesDir()
 {
-    wchar_t path[MAX_PATH];
-    _snwprintf_s(path, MAX_PATH, _TRUNCATE, L"%s\\oz_frequencies.json", g_dir);
+    const wchar_t* cmd = GetCommandLineW();
+    if (!cmd)
+        return;
 
+    const wchar_t* at = wcsstr(cmd, L"-profiles=");
+    if (!at)
+        return;
+
+    at += 10;   // past "-profiles="
+
+    wchar_t raw[MAX_PATH];
+    size_t n = 0;
+
+    if (*at == L'"')
+    {
+        at++;
+        while (*at && *at != L'"' && n < MAX_PATH - 1)
+            raw[n++] = *at++;
+    }
+    else
+    {
+        // An unquoted path ends at the next argument. A path with spaces
+        // in it must have been quoted, so this is not a case that can be
+        // recovered -- nor one we can be handed by a launcher that works.
+        while (*at && *at != L' ' && n < MAX_PATH - 1)
+            raw[n++] = *at++;
+    }
+    raw[n] = L'\0';
+
+    if (n == 0)
+        return;
+
+    while (n > 0 && (raw[n - 1] == L'\\' || raw[n - 1] == L'/'))
+        raw[--n] = L'\0';
+
+    // Relative to the WORKING directory -- where the server was launched
+    // from, not where this DLL happens to live.
+    if (!GetFullPathNameW(raw, MAX_PATH, g_profiles, NULL))
+        wcscpy_s(g_profiles, MAX_PATH, raw);
+}
+
+// Read one file whole. Missing is not an error at either of the two places
+// this gets asked, so it is reported as false and nothing else.
+static bool ReadWholeFile(const wchar_t* path, char* out, DWORD cap)
+{
     HANDLE h = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL,
                            OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (h == INVALID_HANDLE_VALUE)
-    {
-        Log("no oz_frequencies.json beside the DLL; using defaults "
-            "base=%.3f step=%.3f count=%d", g_config.base, g_config.step, g_config.count);
-        return;
-    }
+        return false;
 
-    char text[4096];
     DWORD read = 0;
-    BOOL ok = ReadFile(h, text, sizeof(text) - 1, &read, NULL);
+    BOOL ok = ReadFile(h, out, cap - 1, &read, NULL);
     CloseHandle(h);
     if (!ok)
     {
-        Log("oz_frequencies.json could not be read (%lu); using defaults", GetLastError());
+        Log("%ls could not be read (%lu)", path, GetLastError());
+        return false;
+    }
+
+    out[read] = '\0';
+    return true;
+}
+
+static void LoadConfig()
+{
+    char text[4096];
+    wchar_t path[MAX_PATH];
+    bool got = false;
+
+    // The admin-editable copy WINS. It sits beside the rest of the mod
+    // configs, so a panel that can edit those can edit this one too.
+    if (g_profiles[0])
+    {
+        _snwprintf_s(path, MAX_PATH, _TRUNCATE,
+                     L"%s\\OpenZone\\Frequencies.json", g_profiles);
+        got = ReadWholeFile(path, text, sizeof(text));
+        if (got)
+            Log("grid read from the profile: %ls", path);
+    }
+
+    if (!got)
+    {
+        _snwprintf_s(path, MAX_PATH, _TRUNCATE, L"%s\\oz_frequencies.json", g_dir);
+        got = ReadWholeFile(path, text, sizeof(text));
+        if (got)
+            Log("grid read from beside the DLL: %ls", path);
+    }
+
+    if (!got)
+    {
+        Log("no grid file in the profile or beside the DLL; using defaults "
+            "base=%.3f step=%.3f count=%d", g_config.base, g_config.step, g_config.count);
         return;
     }
-    text[read] = '\0';
 
     double count = g_config.count;
     if (!ReadNumber(text, "base_mhz", &g_config.base))
@@ -194,6 +284,10 @@ static void Start(HMODULE self)
     if (slash)
         *slash = L'\0';
 
+    // Before LoadConfig: the log always lives beside the DLL, but the grid
+    // may not, and LoadConfig has to know where to look first.
+    FindProfilesDir();
+
     if (!IsDedicatedServer())
     {
         // Deliberately silent: on a Diag stand this branch runs for the game
@@ -230,7 +324,10 @@ static void Start(HMODULE self)
     }
 
     Log("patched: %s", why);
-    Log("channels: %d, from %.3f MHz in steps of %.3f MHz (index 0 = %.3f, "
+    // The STEP gets four places, not three. It is the number most likely to
+    // be mis-set, and at three places the shipped 0.0125 prints as 0.013 --
+    // a log that rounds the value being checked is a log that lies about it.
+    Log("channels: %d, from %.3f MHz in steps of %.4f MHz (index 0 = %.3f, "
         "index %d = %.3f)",
         g_config.count, g_config.base, g_config.step,
         g_config.base, g_config.count - 1,

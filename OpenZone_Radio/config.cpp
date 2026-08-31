@@ -158,4 +158,44 @@ class CfgVehicles
         descriptionShort = "$STR_OZR_RADIO_DESC";
         range = 5000;
     };
+
+    class OZ_Radio_50m : PersonalRadio
+    {
+        scope = 2;
+        displayName = "$STR_OZR_RADIO_50";
+        descriptionShort = "$STR_OZR_RADIO_DESC";
+        range = 50;
+    };
+
+    class OZ_Radio_250m : PersonalRadio
+    {
+        scope = 2;
+        displayName = "$STR_OZR_RADIO_250";
+        descriptionShort = "$STR_OZR_RADIO_DESC";
+        range = 250;
+    };
+
+    class OZ_Radio_750m : PersonalRadio
+    {
+        scope = 2;
+        displayName = "$STR_OZR_RADIO_750";
+        descriptionShort = "$STR_OZR_RADIO_DESC";
+        range = 750;
+    };
+
+    class OZ_Radio_2000m : PersonalRadio
+    {
+        scope = 2;
+        displayName = "$STR_OZR_RADIO_2000";
+        descriptionShort = "$STR_OZR_RADIO_DESC";
+        range = 2000;
+    };
+
+    class OZ_Radio_10000m : PersonalRadio
+    {
+        scope = 2;
+        displayName = "$STR_OZR_RADIO_10000";
+        descriptionShort = "$STR_OZR_RADIO_DESC";
+        range = 10000;
+    };
 };

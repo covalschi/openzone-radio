@@ -264,6 +264,19 @@ modded class OZ_VppAdminMenu
             return;
         }
 
+        // Порожнє поле -- це НЕ помилка, це «ще не заповнено», i казати про
+        // нього «поза сiткою» -- рiвно те, що збиває з пантелику: нуль справдi
+        // лежить далеко пiд низом сiтки, але людина не вводила нуля, вона не
+        // вводила нiчого.
+        if (lo <= 0 || hi <= 0)
+        {
+            Say("RadF_Chan", "channels: -");
+            Say("RadF_Fit1", "nothing to check yet - pick a profile on the left, or type both bounds");
+            Say("RadF_Fit2", "");
+            Say("RadF_Fit3", "");
+            return;
+        }
+
         float gs = OZR_ClientGrid.StepMHz();
 
         // Пiв кроку сiтки: все, що ближче, -- те саме дiлення, а не сусiднє.
@@ -291,7 +304,15 @@ modded class OZ_VppAdminMenu
         // 2. Межi всерединi сiтки?
         string fit2 = "span: ";
         if (loIdx < 0 || hiIdx > OZR_ClientGrid.Count() - 1)
-            fit2 += "OUTSIDE the grid - the engine has no such divisions";
+        {
+            // Називаємо межi, на якi скаржимось. Повiдомлення, яке каже «не
+            // туди» й не каже куди, змушує шукати вiдповiдь деiнде.
+            fit2 += "OUTSIDE the grid - the engine only has ";
+            fit2 += OZR_Fmt.MHz(OZR_ClientGrid.BaseMHz());
+            fit2 += " to " + OZR_Fmt.MHz(OZR_ClientGrid.MHzAt(OZR_ClientGrid.Count() - 1));
+            fit2 += " MHz";
+            Hint("the ether itself is set in oz_frequencies.json beside the server binary - widening it needs a server restart");
+        }
         else if (hiIdx <= loIdx)
             fit2 += "EMPTY - the upper bound must be above the lower one";
         else
