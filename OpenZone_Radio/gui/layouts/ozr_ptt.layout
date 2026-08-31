@@ -1,0 +1,67 @@
+// Іконка PTT у HUD.
+//
+// Кладеться прямо на робочу область (CreateWidgets), а не в меню: це не вікно,
+// а лампочка. Місце на екрані ставить OZR_PttHud -- воно рахується з
+// роздільної здатності, і розкладка тримає картку в нулі.
+//
+// IGNOREPOINTER 1 НА ВСЬОМУ. Віджет висить поверх гри постійно, і будь-який
+// прямокутник, який ловить курсор, з'їдав би кліки по світу мовчки. Тут ловити
+// нема чого: іконка нічого не робить по кліку, вона тільки показує.
+//
+// Картинка -- ванільна, з інвентарного набору. Свого атласу мод не має, а
+// малювати рацію заново, коли гра вже несе рацію, немає підстав.
+//
+// Імена читає OZR_PttHud.c: PttCard (корінь), PttIcon, PttState.
+
+PanelWidgetClass PttCard {
+ visible 0
+ ignorepointer 1
+ position 0 0
+ size 176 62
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ color 0.055 0.059 0.071 0.549
+ style rover_sim_colorable
+ priority 1
+ {
+  ImageWidgetClass PttIcon {
+   visible 1
+   ignorepointer 1
+   position 11 10
+   size 42 42
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   image0 "set:dayz_inventory image:walkietalkie"
+   // mode blend і "src alpha" -- як у бейзелі КПК: без них рушій підмішує
+   // картинку аддитивно й ігнорує альфу, тобто прозоре тло іконки стає
+   // світлим прямокутником.
+   mode blend
+   "src alpha" 1
+   "stretch mode" stretch_w_h
+   color 0.451 0.451 0.490 1
+   priority 2
+  }
+  TextWidgetClass PttState {
+   visible 1
+   ignorepointer 1
+   position 62 19
+   size 104 24
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "PTT"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text" 1
+   "exact text size" 18
+   "text halign" left
+   "text valign" center
+   color 0.451 0.451 0.490 1
+   priority 3
+  }
+ }
+}

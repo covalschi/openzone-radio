@@ -70,4 +70,5 @@ class OZR_Const
     static const string RPC_GRID_REQ = "OZR_GridReq";
     static const string RPC_GRID_RES = "OZR_GridRes";
     static const string RPC_TUNE     = "OZR_TuneReq";
+    static const string RPC_PTT      = "OZR_PttRadio";
 }

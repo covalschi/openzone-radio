@@ -65,6 +65,7 @@ class OZR_Module : CF_ModuleWorld
 
         GetRPCManager().AddRPC(OZ_Const.MOD, OZR_Const.RPC_GRID_REQ, this, SingleplayerExecutionType.Server);
         GetRPCManager().AddRPC(OZ_Const.MOD, OZR_Const.RPC_TUNE,     this, SingleplayerExecutionType.Server);
+        GetRPCManager().AddRPC(OZ_Const.MOD, OZR_Const.RPC_PTT,      this, SingleplayerExecutionType.Server);
 
         OZR_Bands.Probe();
         OZR_Settings.ServerLoad();
@@ -246,6 +247,66 @@ class OZR_Module : CF_ModuleWorld
         radio.OZR_TuneTo(want);
 
         OZR_Log.Dbg("tuned " + radio.GetType() + " to index " + want.ToString() + " = " + OZR_Grid.MHzAt(want).ToString() + " MHz");
+    }
+
+
+    // Кнопка «говорити» на ручних рацій.
+    //
+    // Клієнт присилає НАМІР -- один біт, і більше нічого. Які саме передавачі
+    // від цього відкриються, вирішує сервер, обійшовши інвентар цього гравця:
+    // інакше пакет «говорю» став би способом розкрити чужу рацію.
+    //
+    // Відкриваються ВСІ живі профільні рації, які гравець несе, а не та, що в
+    // руках. Так це працює у ванілі -- увімкнена рація везе голос власника
+    // звідки завгодно, хоч із дна рюкзака -- і саме так рацією користуються:
+    // вмикають, кладуть у розвантаження й лишають руки вільними. Кнопка міняє
+    // те, КОЛИ ефір відкритий, а не те, звідки він чути.
+    //
+    // Ванільних і чужих передавачів обхід не чіпає в обидва боки: їхній ефір
+    // цей мод не відкривав, і закривати його теж не його справа.
+    void OZR_PttRadio(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        if (type != CallType.Server || !sender)
+            return;
+
+        Param1<bool> p = new Param1<bool>(false);
+        if (!ctx.Read(p))
+            return;
+
+        PlayerBase player = OZR_PlayerOf(sender);
+        if (!player || !player.GetInventory())
+            return;
+
+        int touched = OZR_SetAll(player, p.param1);
+
+        string said = "ptt: " + sender.GetName();
+        if (p.param1)
+            said += " opens ";
+        else
+            said += " shuts ";
+        OZR_Log.Dbg(said + touched.ToString() + " radio(s)");
+    }
+
+    // Скільки передавачів перемкнули. Число повертається не для краси: «нуль»
+    // -- це єдине, чим відрізняється «гравець натиснув кнопку без рації» від
+    // «пакет не дійшов», і без нього обидва випадки виглядають у лозі однаково.
+    private int OZR_SetAll(PlayerBase player, bool on)
+    {
+        array<EntityAI> items = new array<EntityAI>();
+        if (!player.GetInventory().EnumerateInventory(InventoryTraversalType.PREORDER, items))
+            return 0;
+
+        int touched = 0;
+        for (int i = 0; i < items.Count(); i++)
+        {
+            TransmitterBase t = TransmitterBase.Cast(items[i]);
+            if (!t || !OZR_Profiles.For(t.GetType()))
+                continue;
+
+            t.OZR_SetSpeaking(on);
+            touched++;
+        }
+        return touched;
     }
 
     void OZR_GridRes(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)

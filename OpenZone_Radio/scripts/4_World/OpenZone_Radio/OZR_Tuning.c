@@ -172,4 +172,57 @@ modded class TransmitterBase
         OZR_Publish();
         return true;
     }
+
+    // --------------------------------------------------------------- PTT
+    //
+    // Ваніль відкриває передавач разом із живленням: OnWorkStart кличе
+    // EnableBroadcast(true), і далі увімкнена рація везе голос власника
+    // завжди -- хоч із рюкзака. Для рації з кнопкою «говорити» це рівно
+    // навпаки, тож ефір доводиться ЗАКРИВАТИ одразу після ванільного кроку.
+    //
+    // Тільки для ПРОФІЛЬНИХ рацій. Ванільна PersonalRadio і чужі передавачі
+    // лишаються ванільними: міняти поведінку предметів, яких цей мод не
+    // робив, значить ламати їх для модів, які на неї розраховують.
+    override void OnWorkStart()
+    {
+        super.OnWorkStart();
+
+        if (!GetGame() || !GetGame().IsServer())
+            return;
+
+        if (OZR_Profiles.For(GetType()))
+        {
+            EnableBroadcast(false);
+
+            // Видно в лозі стенда. Інакше «ефір закритий» -- твердження без
+            // жодного спостережуваного наслідку: рація, яка мовчить, і рація,
+            // якої гейт не торкнувся, зовні виглядають однаково доти, доки
+            // хтось не спробує в неї заговорити.
+            OZR_Log.Dbg("ptt gate: " + GetType() + " powered up with the air shut");
+        }
+    }
+
+    // Клієнт сказав, що гравець тримає (або защіпнув) кнопку.
+    //
+    // Перевірка живлення тут не зайва, хоч клієнт її вже робив: вимкнути
+    // рацію можна між пакетом і його обробкою, а відкритий передавач на
+    // знеструмленій коробці -- це стан, якого не буває.
+    void OZR_SetSpeaking(bool on)
+    {
+        if (!OZR_IsPowered())
+        {
+            EnableBroadcast(false);
+            OZR_Log.Dbg("ptt gate: " + GetType() + " asked to speak while dead - refused");
+            return;
+        }
+
+        EnableBroadcast(on);
+
+        string said = "ptt gate: " + GetType() + " air ";
+        if (on)
+            said += "OPEN";
+        else
+            said += "shut";
+        OZR_Log.Dbg(said + ", broadcasting=" + IsBroadcasting().ToString());
+    }
 }
