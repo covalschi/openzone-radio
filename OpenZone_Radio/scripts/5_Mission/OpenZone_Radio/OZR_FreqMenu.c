@@ -22,6 +22,11 @@ class OZR_FreqMenu extends UIScriptedMenu
     private string m_Typed = "";
     private float  m_Since = 0;
 
+    // Підказка тримається В ПОЛІ, а не пишеться просто у віджет. Інакше
+    // наступний же Paint затирає її звичайним текстом -- саме так відмова
+    // «частота поза смугою» жодного разу не потрапила гравцеві на очі.
+    private string m_HintKey = "#STR_OZR_KEYPAD_HINT";
+
     // Перетягування: зсув між курсором і кутом картки в мить захоплення.
     private bool   m_Dragging = false;
     private float  m_GrabX = 0;
@@ -254,7 +259,7 @@ class OZR_FreqMenu extends UIScriptedMenu
         }
 
         if (m_Hint)
-            m_Hint.SetText("#STR_OZR_KEYPAD_HINT");
+            m_Hint.SetText(m_HintKey);
     }
 
     // Перетягування за верхню смугу. Тягнемо КАРТКУ, а не окремі віджети:
@@ -347,6 +352,9 @@ class OZR_FreqMenu extends UIScriptedMenu
         // Btn0..Btn9 -- останній символ імені і є цифрою.
         if (name.Length() == 4 && name.Substring(0, 3) == "Btn")
         {
+            // Почав набирати -- відмова більше не актуальна.
+            m_HintKey = "#STR_OZR_KEYPAD_HINT";
+
             // Довжину обмежуємо: «1451250000» не частота, а промах по клавіші,
             // помножений на десять.
             if (m_Typed.Length() < 8)
@@ -369,9 +377,13 @@ class OZR_FreqMenu extends UIScriptedMenu
             return;
         }
 
+        // Нічого не набрано -- значить частоту вже виставили стрілками, і
+        // підтверджувати нема чого. TUNE тут означає просто «готово», і
+        // мовчазна кнопка на цьому місці читається як зламана.
         if (m_Typed == "")
         {
-            OZR_Log.Dbg("freq keypad: commit ignored - nothing typed");
+            OZR_Log.Dbg("freq keypad: nothing typed, closing");
+            Close();
             return;
         }
 
@@ -384,9 +396,8 @@ class OZR_FreqMenu extends UIScriptedMenu
         if (idx < lo || idx > hi)
         {
             OZR_Log.Dbg("freq keypad: commit refused - " + m_Typed + " is outside this set's band");
-            m_Typed = "";
-            if (m_Hint)
-                m_Hint.SetText("#STR_OZR_KEYPAD_OUT");
+            m_Typed   = "";
+            m_HintKey = "#STR_OZR_KEYPAD_OUT";
             Paint();
             return;
         }
