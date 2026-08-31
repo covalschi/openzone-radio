@@ -37,11 +37,11 @@ class OZR_RadioState
     // немає або він порожній, -- і сторінка розрізняє їх за HasCarrier.
     bool  HasCarrier = false;
     int   FreeSlots  = -1;
-    ref array<ref OZR_FreqEntry> Book;
+    ref array<ref OZR_BookRow> Book;
 
     void OZR_RadioState()
     {
-        Book = new array<ref OZR_FreqEntry>();
+        Book = new array<ref OZR_BookRow>();
     }
 }
 

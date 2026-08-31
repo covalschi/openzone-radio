@@ -33,7 +33,17 @@ class OZR_Module : CF_ModuleWorld
     private ref Timer m_PullTimer;
     private int m_PullsLeft = 0;
     private static const float PULL_INTERVAL = 2.0;
-    private static const int   PULL_TRIES    = 10;
+
+    // ДВІ ХВИЛИНИ, а не двадцять секунд. Тяга починається з OnMissionStart --
+    // тобто ще під час завантаження, задовго до того, як гравець опиниться у
+    // світі: на цьому стенді від старту місії до входу минає близько хвилини,
+    // і всі перші пакети йдуть у нікуди, бо каналу ще немає. Десяти спроб на
+    // це не вистачало, і сітка не приїжджала зовсім -- сторінка чесно писала
+    // «сервер ще не сказав», а виглядало це як поломка.
+    //
+    // Ціна помилитись у другий бік -- один крихітний пакет на дві секунди,
+    // і лише поки сітки немає. Тому запас великий.
+    private static const int   PULL_TRIES    = 60;
 
     override void OnMissionStart(Class sender, CF_EventArgs args)
     {
@@ -46,6 +56,7 @@ class OZR_Module : CF_ModuleWorld
         if (GetGame().IsClient())
         {
             GetRPCManager().AddRPC(OZR_Const.MOD, OZR_Const.RPC_GRID_RES, this, SingleplayerExecutionType.Client);
+            GetRPCManager().AddRPC(OZR_Const.MOD, OZR_Const.RPC_PROF_RES, this, SingleplayerExecutionType.Client);
 
             m_PullsLeft = PULL_TRIES;
             m_PullTimer = new Timer(CALL_CATEGORY_SYSTEM);
@@ -104,6 +115,9 @@ class OZR_Module : CF_ModuleWorld
         }
 
         m_PullsLeft--;
+        if (m_PullsLeft == 0)
+            OZR_Log.Warn("the ether never arrived from the server after " + PULL_TRIES.ToString() + " tries - frequencies will show as unknown");
+
         GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_GRID_REQ, new Param1<int>(OZR_Const.SCHEMA_PROFILES), true);
     }
 
@@ -136,27 +150,27 @@ class OZR_Module : CF_ModuleWorld
         if (type != CallType.Server || !sender)
             return;
 
-        OZR_GridInfo info = new OZR_GridInfo();
-        info.BaseMHz = OZR_Grid.MHzAt(0);
-        info.StepMHz = OZR_Grid.StepMHz();
-        info.Count   = OZR_Grid.Count();
+        // ЧИСЛАМИ, а не JSON-ом: рядок-значення рушій ріже на 1023 байтах, і
+        // один пакет із сіткою та всіма профілями переріс цю межу на
+        // одинадцятому профілі. Обробник падав із «String CORRUPTED», а
+        // виглядало це як «сітка не приїхала».
+        GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_GRID_RES,
+            new Param3<float, float, int>(OZR_Grid.MHzAt(0), OZR_Grid.StepMHz(), OZR_Grid.Count()),
+            true, sender);
 
         OZR_Profiles cfg = OZR_Profiles.Get();
-        if (cfg && cfg.Radios)
-        {
-            for (int i = 0; i < cfg.Radios.Count(); i++)
-                info.Radios.Insert(cfg.Radios[i]);
-        }
-
-        string json;
-        string err;
-        if (!JsonFileLoader<OZR_GridInfo>.MakeData(info, json, err, false))
-        {
-            OZR_Log.Error("grid serialise failed: " + err);
+        if (!cfg || !cfg.Radios)
             return;
-        }
 
-        GetRPCManager().SendRPC(OZR_Const.MOD, "OZR_GridRes", new Param1<string>(json), true, sender);
+        // По пакету на профіль. Їх десяток -- це десяток крихітних пакетів раз
+        // на сесію, і жодної довжини, яку можна переростити.
+        for (int i = 0; i < cfg.Radios.Count(); i++)
+        {
+            OZR_RadioProfile p = cfg.Radios[i];
+            GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_PROF_RES,
+                new Param4<string, float, float, float>(p.ClassName, p.MinMHz, p.MaxMHz, p.StepMHz),
+                true, sender);
+        }
     }
 
     // Пряма настройка на ділення. Клієнт присилає ЧИСЛО, і воно не має жодної
@@ -295,25 +309,29 @@ class OZR_Module : CF_ModuleWorld
         if (type != CallType.Client)
             return;
 
-        Param1<string> p = new Param1<string>("");
+        Param3<float, float, int> p = new Param3<float, float, int>(0, 0, 0);
         if (!ctx.Read(p))
             return;
 
-        OZR_GridInfo info;
-        string err;
-        if (!JsonFileLoader<OZR_GridInfo>.LoadData(p.param1, info, err) || !info)
-        {
-            OZR_Log.Error("grid parse failed: " + err);
-            return;
-        }
+        OZR_ClientGrid.SetGrid(p.param1, p.param2, p.param3);
 
-        OZR_ClientGrid.Set(info);
-
-        string got = "grid received: " + info.Count.ToString() + " divisions from ";
-        got += info.BaseMHz.ToString() + " MHz by " + info.StepMHz.ToString();
+        string got = "ether received: " + p.param3.ToString() + " divisions from ";
+        got += OZR_Fmt.MHz(p.param1) + " MHz by " + OZR_Fmt.Step(p.param2);
         OZR_Log.Info(got);
 
         if (m_PullTimer)
             m_PullTimer.Stop();
+    }
+
+    void OZR_ProfRes(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        if (type != CallType.Client)
+            return;
+
+        Param4<string, float, float, float> p = new Param4<string, float, float, float>("", 0, 0, 0);
+        if (!ctx.Read(p))
+            return;
+
+        OZR_ClientGrid.AddProfile(p.param1, p.param2, p.param3, p.param4);
     }
 }

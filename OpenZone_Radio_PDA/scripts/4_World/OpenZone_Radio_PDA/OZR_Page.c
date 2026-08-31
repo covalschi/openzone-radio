@@ -77,9 +77,38 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
             st.HasCarrier = true;
             st.FreeSlots  = carrier.OZ_RoomFor(OZRP_Const.KIND_FREQS);
 
+            // Доступність рахуємо ТУТ, проти профілю тієї плати, яка справді
+            // стоїть. Книжку носять між рацій: частота, записана з
+            // п'ятикілометрової, у смугу двохсотметрової не влазить, і сказати
+            // про це треба до натискання, а не після відмови.
+            int lo;
+            int hi;
+            int stride;
+            bool window = false;
+
+            OZR_RadioProfile bp;
+            if (board)
+                bp = OZR_Profiles.For(board.GetType());
+            if (bp)
+                window = OZR_Grid.Window(bp, lo, hi, stride);
+
             OZR_FreqBook book = Read(carrier);
             for (int b = 0; b < book.Items.Count(); b++)
-                st.Book.Insert(book.Items[b]);
+            {
+                OZR_FreqEntry e = book.Items[b];
+
+                OZR_BookRow row = new OZR_BookRow();
+                row.Name  = e.Name;
+                row.Index = e.Index;
+                if (OZR_Grid.Ready())
+                    row.MHz = OZR_Grid.MHzAt(e.Index);
+
+                row.Reach = window && e.Index >= lo && e.Index <= hi;
+                if (row.Reach && stride > 0)
+                    row.Reach = ((e.Index - lo) % stride) == 0;
+
+                st.Book.Insert(row);
+            }
         }
 
         string body;

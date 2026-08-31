@@ -143,14 +143,26 @@ class OZR_PageRadio : OZ_PdaPage
             return false;
 
         m_Picked = row;
-        if (m_State && row >= 0 && row < m_State.Book.Count())
+        if (!m_State || row < 0 || row >= m_State.Book.Count())
+            return true;
+
+        OZR_BookRow r = m_State.Book[row];
+
+        // Прямо у віджет: SetText базової сторінки вміє лише TextWidget,
+        // а поле вводу -- інший клас.
+        if (m_Name)
+            m_Name.SetText(r.Name);
+
+        // Недосяжний рядок вибрати можна -- забути його або переписати ім'я
+        // треба вміти, -- а настроїтись на нього не можна, і причина
+        // називається одразу.
+        if (!r.Reach)
         {
-            // Прямо у віджет: SetText базової сторінки вміє лише TextWidget,
-            // а поле вводу -- інший клас.
-            if (m_Name)
-                m_Name.SetText(m_State.Book[row].Name);
-            Tune(m_State.Book[row].Index);
+            Hint("STR_OZR_ERR_OUT_OF_REACH");
+            return true;
         }
+
+        Tune(r.Index);
         return true;
     }
 
@@ -300,15 +312,21 @@ class OZR_PageRadio : OZ_PdaPage
 
         for (int i = 0; i < m_State.Book.Count(); i++)
         {
-            OZR_FreqEntry e = m_State.Book[i];
+            OZR_BookRow e = m_State.Book[i];
 
-            // Частоту рахуємо з ділення сіткою, яку прислав сервер: у книжці
-            // лежить позиція, а не число, і після зміни ефіру та сама позиція
-            // -- інша частота. Показуємо те, що буде НАСПРАВДІ.
-            string line = e.Name;
-            if (OZR_ClientGrid.Ready())
-                line += "   " + OZR_Fmt.MHz(OZR_ClientGrid.MHzAt(e.Index));
+            // Частоту рахує сервер: у книжці лежить позиція, а не число, і
+            // клієнт міг ще не отримати сітку -- список має читатись однаково.
+            string line = e.Name + "   " + OZR_Fmt.MHz(e.MHz);
+            if (!e.Reach)
+                line += "   " + "#STR_OZR_OUT_OF_REACH";
+
             m_Book.AddItem(line, NULL, 0);
+
+            // Недосяжне ще й ГАСНЕ. Не замість підпису, а разом із ним: колір
+            // сам по собі нічого не пояснює, а підпис сам по собі губиться в
+            // рівному списку.
+            if (!e.Reach)
+                m_Book.SetItemColor(i, 0, ARGB(255, 115, 115, 125));
         }
 
         if (m_State.FreeSlots >= 0)

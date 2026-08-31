@@ -35,69 +35,74 @@ class OZR_KeypadPos
     float Y   = 0;
 }
 
-// Те, що сервер розповідає клієнтові про ефір -- один раз за сесію.
+// Клієнтська копія ефіру. Порожня, поки сервер не відповів, і кожен, хто нею
+// користується, зобов'язаний це перевірити: до відповіді малювати частоту нема
+// з чого, і намалювати ванільні 87.8 було б гірше, ніж не малювати нічого.
 //
-// Клієнтові це ПОТРІБНО, і своїми силами він цього не дізнається. Сітку міряє
-// OZR_Bands, ганяючи движкові нативи, але на клієнті таблиця рушія лишається
-// ванільною: патч серверний. Тому GetTunedFrequency() на клієнті повертає одну
-// зі старих восьми частот -- число, якого в нашому ефірі немає взагалі, -- і
-// підпис доводиться рахувати самим, з індексу, який синхронізується чесно.
-class OZR_GridInfo
-{
-    // Що рушій роздає ЗАРАЗ -- виміряне. Ефір, який СТАНЕ після рестарту,
-    // сюди не їде навмисне: вкладка виводить його сама, тією ж функцією й
-    // із тих самих профілів (OZR_Ether.Derive). Друге джерело для того
-    // самого числа рано чи пізно розійшлося б із першим.
-    float BaseMHz = 0;
-    float StepMHz = 0;
-    int   Count   = 0;
-
-
-    ref array<ref OZR_RadioProfile> Radios;
-
-    void OZR_GridInfo()
-    {
-        Radios = new array<ref OZR_RadioProfile>();
-    }
-}
-
-// Клієнтська копія. Порожня, поки сервер не відповів, і кожен, хто нею
-// користується, зобов'язаний це перевірити: до відповіді малювати частоту
-// нема з чого, і намалювати ванільні 87.8 було б гірше, ніж не малювати
-// нічого.
+// НАПОВНЮЄТЬСЯ ЧИСЛАМИ, А НЕ JSON-ОМ, і це не смак. Раніше сюди їхав один
+// рядок із усім одразу -- сітка й усі профілі, -- і на одинадцятому профілі він
+// переріс межу рушія: рядок-значення ріжеться на 1023 байтах, а обробник падає
+// з «String CORRUPTED - FIX OnStoreLoad()». Причому падає ТИХО з точки зору
+// гравця: сітка просто не приїжджає, і сторінка чесно пише «сервер ще не
+// сказав».
+//
+// Тепер сітка -- три числа, профіль -- чотири поля, кожен своїм пакетом. Межі
+// довжини тут немає взагалі, бо немає рядка, який можна переростити.
 class OZR_ClientGrid
 {
-    private static ref OZR_GridInfo s_Info;
+    private static float s_Base  = 0;
+    private static float s_Step  = 0;
+    private static int   s_Count = 0;
 
-    static void Set(OZR_GridInfo info)
+    private static ref array<ref OZR_RadioProfile> s_Radios;
+
+    // Сітка приходить ПЕРШОЮ й скидає перелік профілів: пакети йдуть
+    // гарантованими й по порядку, тож усе, що приїде після неї, належить їй.
+    static void SetGrid(float base, float step, int count)
     {
-        s_Info = info;
+        s_Base   = base;
+        s_Step   = step;
+        s_Count  = count;
+        s_Radios = new array<ref OZR_RadioProfile>();
+    }
+
+    static void AddProfile(string className, float lo, float hi, float step)
+    {
+        if (!s_Radios)
+            s_Radios = new array<ref OZR_RadioProfile>();
+
+        OZR_RadioProfile p = new OZR_RadioProfile();
+        p.ClassName = className;
+        p.MinMHz    = lo;
+        p.MaxMHz    = hi;
+        p.StepMHz   = step;
+        s_Radios.Insert(p);
     }
 
     static bool Ready()
     {
-        return s_Info != null && s_Info.Count > 1 && s_Info.StepMHz > 0;
+        return s_Count > 1 && s_Step > 0;
     }
 
     static float MHzAt(int index)
     {
         if (!Ready())
             return 0;
-        return s_Info.BaseMHz + index * s_Info.StepMHz;
+        return s_Base + index * s_Step;
     }
 
     static int IndexOf(float mhz)
     {
         if (!Ready())
             return 0;
-        return Math.Round((mhz - s_Info.BaseMHz) / s_Info.StepMHz);
+        return Math.Round((mhz - s_Base) / s_Step);
     }
 
     static int Count()
     {
         if (!Ready())
             return 0;
-        return s_Info.Count;
+        return s_Count;
     }
 
     // Віддаються ПРЯМО, а не через різницю сусідніх ділень: віднімання двох
@@ -107,26 +112,35 @@ class OZR_ClientGrid
     {
         if (!Ready())
             return 0;
-        return s_Info.BaseMHz;
+        return s_Base;
     }
 
     static float StepMHz()
     {
         if (!Ready())
             return 0;
-        return s_Info.StepMHz;
+        return s_Step;
     }
 
     static OZR_RadioProfile For(string className)
     {
-        if (!Ready() || !s_Info.Radios)
+        if (!s_Radios)
             return null;
 
-        for (int i = 0; i < s_Info.Radios.Count(); i++)
+        for (int i = 0; i < s_Radios.Count(); i++)
         {
-            if (s_Info.Radios[i].ClassName == className)
-                return s_Info.Radios[i];
+            if (s_Radios[i].ClassName == className)
+                return s_Radios[i];
         }
         return null;
+    }
+
+    static void All(out array<ref OZR_RadioProfile> outList)
+    {
+        outList = new array<ref OZR_RadioProfile>();
+        if (!s_Radios)
+            return;
+        for (int i = 0; i < s_Radios.Count(); i++)
+            outList.Insert(s_Radios[i]);
     }
 }

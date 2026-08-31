@@ -85,6 +85,7 @@ class OZR_Const
     // RPC цього мода. Імена глобальні на весь процес, тому з префіксом.
     static const string RPC_GRID_REQ = "OZR_GridReq";
     static const string RPC_GRID_RES = "OZR_GridRes";
+    static const string RPC_PROF_RES = "OZR_ProfRes";
     static const string RPC_TUNE     = "OZR_TuneReq";
     static const string RPC_PTT      = "OZR_PttRadio";
 }
