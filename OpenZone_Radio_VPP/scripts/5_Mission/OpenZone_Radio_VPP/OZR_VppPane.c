@@ -378,7 +378,12 @@ modded class OZ_VppAdminMenu
         chan += "   from " + OZR_Fmt.MHz(lo) + " to " + OZR_Fmt.MHz(hi);
         Say("RadF_Chan", chan);
 
-        Say("RadF_Fit1", "step: every " + stride.ToString() + " divisions of the new ether");
+        string every = "step: every " + stride.ToString();
+        if (stride == 1)
+            every += " division of the new ether";
+        else
+            every += " divisions of the new ether";
+        Say("RadF_Fit1", every);
 
         // Друге питання, i єдине, яке ще може мати вiдповiдь «нi»: чи працює
         // цей профiль ВЖЕ, чи тiльки пiсля рестарту. Ефiр пiде за ним у будь-

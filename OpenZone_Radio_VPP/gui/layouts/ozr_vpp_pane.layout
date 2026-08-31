@@ -52,7 +52,7 @@ FrameWidgetClass OZ_RadioVppPane {
  }
  TextWidgetClass RadGrid {
   position 20 26
-  size 660 20
+  size 960 20
   hexactpos 1
   vexactpos 1
   hexactsize 1
@@ -68,7 +68,7 @@ FrameWidgetClass OZ_RadioVppPane {
  }
  TextWidgetClass RadEther {
   position 20 44
-  size 660 20
+  size 960 20
   hexactpos 1
   vexactpos 1
   hexactsize 1
@@ -258,7 +258,7 @@ FrameWidgetClass OZ_RadioVppPane {
  }
  EditBoxWidgetClass RadF_Class {
   position 530 68
-  size 330 24
+  size 330 30
   hexactpos 1
   vexactpos 1
   hexactsize 1
@@ -289,7 +289,7 @@ FrameWidgetClass OZ_RadioVppPane {
  }
  EditBoxWidgetClass RadF_Min {
   position 530 102
-  size 200 24
+  size 200 30
   hexactpos 1
   vexactpos 1
   hexactsize 1
@@ -320,7 +320,7 @@ FrameWidgetClass OZ_RadioVppPane {
  }
  EditBoxWidgetClass RadF_Max {
   position 530 136
-  size 200 24
+  size 200 30
   hexactpos 1
   vexactpos 1
   hexactsize 1
@@ -351,7 +351,7 @@ FrameWidgetClass OZ_RadioVppPane {
  }
  EditBoxWidgetClass RadF_Step {
   position 530 170
-  size 200 24
+  size 200 30
   hexactpos 1
   vexactpos 1
   hexactsize 1
