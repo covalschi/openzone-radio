@@ -178,6 +178,38 @@ modded class TransmitterBase
         if (!super.OnStoreLoad(ctx, version))
             return false;
 
+        // Збережений індекс міг пережити сітку, в якій він щось означав.
+        //
+        // Ефір виводиться з профілів, тож після їх правки й рестарту сітка
+        // буває іншою: рація прокидається за межами власної смуги, мовчить, а
+        // ванільна ручка від смуги тільки віддаляє -- ваніль крокує +1 і про
+        // смуги не знає. EEInit це вміє, але відпрацьовує ДО
+        // super.OnStoreLoad, тобто до того, як збережений індекс поставили;
+        // для піднятого зі збереження предмета з нього користі немає.
+        //
+        // Коли сітки нема взагалі, чіпати нічого: рушій візьме
+        // table[index & 7], і це справжній ванільний канал.
+        OZR_RadioProfile p = OZR_Profiles.For(GetType());
+        int lo;
+        int hi;
+        int stride;
+        if (p && OZR_Grid.Window(p, lo, hi, stride))
+        {
+            int cur = GetTunedFrequencyIndex();
+            if (cur < lo || cur > hi)
+            {
+                string said = GetType() + " woke up on index " + cur.ToString();
+                said += ", outside its band " + lo.ToString() + ".." + hi.ToString();
+                said += " - brought back to " + lo.ToString();
+                OZR_Log.Info(said);
+
+                // OZR_TuneTo сам розкаже клієнтові -- окремий OZR_Publish тут
+                // був би другим повідомленням про ту саму зміну.
+                OZR_TuneTo(lo);
+                return true;
+            }
+        }
+
         OZR_Publish();
         return true;
     }

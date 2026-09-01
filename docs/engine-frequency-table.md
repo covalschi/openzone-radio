@@ -279,3 +279,48 @@ radios on indices 0 and 8 with a patched server are genuinely separate channels.
 That test needs live voice, and it is the one place in this work where a second
 person is required.
 
+
+## What it looks like when the patch is NOT in effect
+
+Observed on a live server with players, 2026-09-01. A restart brought the server up
+without the native library, and every radio on it started reporting frequencies
+around 2100 MHz — `2108.000`, then `2124.8`, `2126.9`, `2129.0` as the player
+turned the knob. The keypad accepted a frequency and did nothing.
+
+Every number above is the eight-entry table doing exactly what it is documented to
+do here, plus one mod defect on top.
+
+`OZR_Grid` derives base, step and count from whatever `OZR_Bands.Probe` measured.
+On an unpatched engine that measurement is the vanilla eight, so:
+
+```
+base = 87.8            step = (102.5 - 87.8) / 7 = 2.1            count = 8
+```
+
+Those three numbers are arithmetically correct and completely meaningless: the
+vanilla eight are not evenly spaced, and `base + i*step` describes no frequency the
+engine has. `OZR_Grid.Ready()` exists to say precisely that, and it correctly
+returned false — but the RPC that ships the grid to clients did not ask it. The
+client received `8 divisions from 87.800 MHz by 2.1000` (its own log said so), and
+its cheaper `OZR_ClientGrid.Ready()` cannot detect unevenness from three numbers, so
+it believed it.
+
+The radio itself was still on index 962 — saved from the previous session, where a
+1281-division grid made that 148.025 MHz. So the label read `87.8 + 962 * 2.1 =
+2108.000`, and each vanilla `SetNextChannel` (+1 index) moved the label 2.1 MHz.
+Physically the radio was on `table[962 & 7]` = index 2 = 91.3 MHz the whole time.
+
+The keypad refused for a second, independent reason: the server's own tune handler
+checks `OZR_Grid.Ready()` and rejected every request with a `Dbg` line, which retail
+clients never display.
+
+**Fixed 2026-09-02** by making the server's verdict travel with the numbers: when
+`OZR_Grid.Ready()` is false the grid RPC now sends zeros, `OZR_ClientGrid.Ready()`
+is false on the client, and the existing fallbacks take over — the label reverts to
+the engine's own honest value and the keypad refuses to open at all. A saved index
+that no longer fits its band is also brought back into range on load, since `EEInit`
+runs *before* `super.OnStoreLoad` restores it and could never see it.
+
+The lesson generalises: a grid is four facts, and evenness is one of them. Shipping
+three of the four across the wire let the receiver reconstruct a grid that the
+sender had already judged unusable.

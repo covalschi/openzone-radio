@@ -160,8 +160,38 @@ class OZR_Module : CF_ModuleWorld
         // один пакет із сіткою та всіма профілями переріс цю межу на
         // одинадцятому профілі. Обробник падав із «String CORRUPTED», а
         // виглядало це як «сітка не приїхала».
+        // Сітку віддаємо, ЛИШЕ якщо вона сітка.
+        //
+        // Без цієї перевірки сервер описував клієнтові ванільну вісімку як
+        // рівну ґратку: база 87.800, "крок" (102.5 - 87.8) / 7 = 2.1000,
+        // вісім ділень. Клієнт перевірити рівномірність не може -- йому їдуть
+        // три числа, а не таблиця, -- тож він чесно рахував base + i*step для
+        // індексів СПРАВЖНЬОЇ сітки. Рація, збережена на індексі 962 (у сітці
+        // на 1281 ділення це 148.025 МГц), підписувалась як 2108.000 МГц, а
+        // ванільна ручка крокувала її по 2.1 МГц за натиск.
+        //
+        // Спостережено на живому сервері 2026-09-01: після рестарту не
+        // піднявся нативний патч, і рушій роздав ванільну вісімку.
+        //
+        // Нулі означають "ефіру немає", і кожен споживач на клієнті вже вміє
+        // це читати: підпис падає на ванільний, клавіатура не відкривається.
+        bool even = OZR_Grid.Ready();
+        float gBase  = 0;
+        float gStep  = 0;
+        int   gCount = 0;
+        if (even)
+        {
+            gBase  = OZR_Grid.MHzAt(0);
+            gStep  = OZR_Grid.StepMHz();
+            gCount = OZR_Grid.Count();
+        }
+        else
+        {
+            OZR_Log.Warn("ether asked for, but the engine's table is not an even grid - telling the client there is no ether instead of describing the vanilla eight as one");
+        }
+
         GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_GRID_RES,
-            new Param3<float, float, int>(OZR_Grid.MHzAt(0), OZR_Grid.StepMHz(), OZR_Grid.Count()),
+            new Param3<float, float, int>(gBase, gStep, gCount),
             true, sender);
 
         OZR_Profiles cfg = OZR_Profiles.Get();
@@ -321,9 +351,19 @@ class OZR_Module : CF_ModuleWorld
 
         OZR_ClientGrid.SetGrid(p.param1, p.param2, p.param3);
 
-        string got = "ether received: " + p.param3.ToString() + " divisions from ";
-        got += OZR_Fmt.MHz(p.param1) + " MHz by " + OZR_Fmt.Step(p.param2);
-        OZR_Log.Info(got);
+        if (OZR_ClientGrid.Ready())
+        {
+            string got = "ether received: " + p.param3.ToString() + " divisions from ";
+            got += OZR_Fmt.MHz(p.param1) + " MHz by " + OZR_Fmt.Step(p.param2);
+            OZR_Log.Info(got);
+        }
+        else
+        {
+            // Не збій зв'язку, а відповідь: сервер каже, що ефіру немає.
+            // Сказати це прямо треба тому, що зовні воно виглядає точно так
+            // само, як пакет, який не доїхав.
+            OZR_Log.Warn("no ether: the server reports no even frequency grid - radios stay vanilla and the keypad will not open");
+        }
 
         if (m_PullTimer)
             m_PullTimer.Stop();
