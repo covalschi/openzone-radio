@@ -59,12 +59,34 @@ handheld radios, eight presses of tune apart.
 Give **Publisher** the folder itself:
 
 ```
-E:openzoneopenzone-radio@OpenZone_Radio
+E:\openzone\openzone-radio\@OpenZone_Radio
 ```
 
-Not the repository, not `addons` inside it. Publisher writes `meta.cpp` there and puts
-the Workshop item id in it — **keep that file**, because it is what makes the next
-upload update item 3794105144 instead of creating a second one. Do not write it by hand.
+Not the repository, not `addons` inside it.
+
+`meta.cpp` in that folder is what ties it to Workshop item 3794105144: without it the
+next upload creates a SECOND item instead of updating this one. **Keep it, and keep it
+in git.**
+
+> The first publish (2026-09-01) left none — the folder had `addons`, `keys` and
+> `mod.cpp` and nothing else, and a search of the machine for a `meta.cpp` or for the
+> item id turned up nothing at all. It was written by hand afterwards, from the id in
+> the Workshop URL, in the format an installed Workshop mod uses:
+>
+> ```
+> protocol = 1;
+> publishedid = 3794105144;
+> name = "OpenZone Radio";
+> ```
+>
+> `timestamp` is omitted deliberately: a real one carries a value Publisher generates,
+> and inventing a number to sit in a field that means "when this build was uploaded"
+> would be a lie in a file whose whole job is bookkeeping. Publisher fills it on the
+> next upload.
+>
+> If a later publish still creates a second item, the id here is not being read, and
+> the answer is to publish once more from a folder where Publisher itself wrote the
+> file — then commit that version over this one.
 
 `mod_build` overwrites `addons/` and leaves `mod.cpp`, `keys/` and `meta.cpp` alone, so
 re-publishing from the same folder is safe.
