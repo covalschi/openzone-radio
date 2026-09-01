@@ -1,12 +1,19 @@
-// OpenZone Radio.
+// OpenZone Radio -- the band system, and it stands on its own.
 //
-// The radio is not a separate box you carry next to the PDA. It is a MODULE
-// that goes into one of the PDA's bays, plus the antennas that decide how far
-// it reaches. That is what the bay system was built for: the device is one
-// object in the pocket, and what it can do is what is plugged into it.
+// WHAT THIS PBO IS. The ether: how many channels exist, where they sit, who
+// hears whom, and push-to-talk. It needs nothing of ours -- a server that
+// wants nothing but handheld radios on a wider band installs this alone.
 //
-// Hard dependency on OpenZone_PDA, because the module bays, the page registry
-// and the antenna contract all live there.
+// WHAT IT IS NOT. The PDA board. The radio as a MODULE in a device bay lives
+// in @OpenZone_Radio_PDA, a separate pbo in this same repository, and that one
+// does require the PDA. The admin tab is the same story: @OpenZone_Radio_VPP.
+//
+// This header used to say "hard dependency on OpenZone_PDA, because the module
+// bays, the page registry and the antenna contract all live there". It was
+// true once and stopped being true when the glue moved out; requiredAddons
+// below has been the honest answer for a while, and a reader who trusted the
+// prose over the code would have concluded the mod cannot ship alone. It can:
+// booted 2026-09-01 against @CF and nothing else.
 
 class CfgPatches
 {

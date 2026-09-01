@@ -1,3 +1,14 @@
+> **Status as of 2026-09-01.** The plan is done: the patch works, and the stand ran
+> with 5281 frequencies.
+>
+> **One error in the text below.** The patch **WRAPS** an out-of-range index modulo the
+> count; it does not clamp it, as written here. Checked against the code 2026-09-01;
+> the functional registry §3.1 carries the correct wording.
+>
+> What is still live: the ceiling of 65536 divisions was left hard (owner's decision
+> 2026-09-01, TZ-5 §E4), while the reasoning it rested on has been removed from the
+> code — the synchronised variable is registered without bounds.
+
 # More radio frequencies: plan
 
 Goal: raise DayZ's eight radio channels to a number the server owner chooses, with
