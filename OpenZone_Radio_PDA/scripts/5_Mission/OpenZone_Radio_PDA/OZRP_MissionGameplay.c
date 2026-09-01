@@ -12,5 +12,8 @@ modded class MissionGameplay
     {
         super.OnInit();
         OZ_PdaPageFactory.Add(OZRP_Const.PAGE_RADIO, OZR_PageRadio);
+        // Літеру вкладки теж підписуємо самі: перелік у КПК знав рядок
+        // "radio", тобто ім'я чужої сторінки, якої може й не бути.
+        OZ_PdaPageFactory.Letter(OZRP_Const.PAGE_RADIO, "R");
     }
 }

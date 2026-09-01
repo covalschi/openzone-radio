@@ -157,10 +157,9 @@ FrameWidgetClass OZ_PageRadio {
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   style NoScrollBar
    "title visible" 0
    "highlight row" 1
-   colums "text;100;"
+   colums "text;92;"
    lines 7
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
