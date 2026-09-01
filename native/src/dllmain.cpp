@@ -264,18 +264,51 @@ extern "C" float OzFrequencyByIndex(void* /*self*/, int index)
 // -server on the command line. A real DayZServer_x64.exe needs no such flag --
 // it is the dedicated server -- so a gate that read the command line alone
 // would skip the very install this is meant for, and skip it silently.
+// The bare file name of the process we were loaded into, or empty if Windows
+// would not say.
+static wchar_t g_exe[MAX_PATH] = L"";
+
+static void FindExeName()
+{
+    wchar_t full[MAX_PATH] = L"";
+    if (!GetModuleFileNameW(NULL, full, MAX_PATH))
+        return;
+
+    const wchar_t* name = wcsrchr(full, L'\\');
+    name = name ? name + 1 : full;
+    wcscpy_s(g_exe, MAX_PATH, name);
+}
+
 static bool IsDedicatedServer()
 {
     const wchar_t* cmd = GetCommandLineW();
     if (cmd && wcsstr(cmd, L"-server") != NULL)
         return true;
 
-    wchar_t exe[MAX_PATH] = L"";
-    if (GetModuleFileNameW(NULL, exe, MAX_PATH))
+    return _wcsicmp(g_exe, L"DayZServer_x64.exe") == 0;
+}
+
+// Everything the game itself ships in that directory.
+//
+// A proxy is loaded by whatever runs from the folder it sits in, and that
+// folder holds six executables, not one: the launcher and the BattlEye shim
+// run on every ordinary game start. Their silence is expected and has to stay
+// silent, or the log fills with lines about processes that were never going to
+// be a server.
+static bool IsKnownGameProcess()
+{
+    static const wchar_t* known[] = {
+        L"DayZ_x64.exe",
+        L"DayZDiag_x64.exe",
+        L"DayZ_BE.exe",
+        L"DayZLauncher.exe",
+        L"CrashReporter.exe",
+        L"DayZUninstaller.exe",
+    };
+
+    for (int i = 0; i < static_cast<int>(sizeof(known) / sizeof(known[0])); i++)
     {
-        const wchar_t* name = wcsrchr(exe, L'\\');
-        name = name ? name + 1 : exe;
-        if (_wcsicmp(name, L"DayZServer_x64.exe") == 0)
+        if (_wcsicmp(g_exe, known[i]) == 0)
             return true;
     }
     return false;
@@ -291,11 +324,31 @@ static void Start(HMODULE self)
     // Before LoadConfig: the log always lives beside the DLL, but the grid
     // may not, and LoadConfig has to know where to look first.
     FindProfilesDir();
+    FindExeName();
 
     if (!IsDedicatedServer())
     {
-        // Deliberately silent: on a Diag stand this branch runs for the game
-        // client on every launch, and a log line per launch would be noise.
+        // Silent for the GAME, loud for a stranger.
+        //
+        // The silence is deliberate: on a Diag stand this branch runs for the
+        // client on every launch, and a line per launch would bury the file
+        // under noise.
+        //
+        // Being silent for EVERYTHING was the mistake. "No DLL beside the
+        // executable" and "DLL loaded, then rejected by this gate" both left
+        // no log at all -- so the one file whose whole job is to make a silent
+        // failure impossible could not tell them apart, and they need opposite
+        // fixes. A process that is not one of the game's own is exactly what a
+        // renamed or wrapped server looks like, and that is the only shape in
+        // which this gate can be wrong about a real server.
+        if (!IsKnownGameProcess())
+        {
+            Log("----");
+            Log("NOT PATCHED: loaded into \"%ls\", which is neither "
+                "DayZServer_x64.exe nor one of the game's own executables, "
+                "and its command line carries no -server. If this IS the "
+                "server, launch it with -server.", g_exe);
+        }
         return;
     }
 

@@ -324,3 +324,35 @@ runs *before* `super.OnStoreLoad` restores it and could never see it.
 The lesson generalises: a grid is four facts, and evenness is one of them. Shipping
 three of the four across the wire let the receiver reconstruct a grid that the
 sender had already judged unusable.
+
+### Verified on the stand, 2026-09-02
+
+The stand reproduces the condition exactly when the native library is absent, so
+both states were driven end to end with a live client.
+
+**Without the patch** — `band table measured: 8 frequencies 87.8 .. 102.5`:
+
+| what | before the fix | measured after |
+|---|---|---|
+| radio at engine index 18 | `87.8 + 18 × 2.1` = 125.6 | **91.3** — the engine's own `table[18 & 7]` |
+| client log | `ether received: 8 divisions from 87.800 MHz by 2.1000` | `no ether: the server reports no even frequency grid` |
+| keypad on K | opened, then every TUNE was refused server-side | does not open |
+
+The masking is worth seeing plainly: the radio had been stepped 18 times, and the
+vanilla engine drew `table[18 & 7]` = index 2 = 91.3 MHz. That is exactly why the
+live server's 962 read as vanilla channel 2 while the label claimed 2108.
+
+**With the patch** — `band table measured: 5281 frequencies 86 .. 152`, the same
+radio still on index 18 read **86.225** = `86 + 18 × 0.0125`; the keypad opened
+showing the band `86.000 - 150.000 step 0.500`; typing 145.5 and pressing TUNE
+moved it to index 4760, which is 145.5 MHz to the digit.
+
+**The load-time clamp** was then proved with that same radio: narrowing its profile
+to 86–100 and restarting produced
+
+```
+OZ_Radio_1000m woke up on index 4760, outside its band 0..1120 - brought back to 0
+```
+
+which is also the receipt for the keypad — 4760 is the index the tune had written
+and storage had kept.

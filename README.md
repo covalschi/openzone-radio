@@ -112,6 +112,38 @@ The native library reads it once, at process start, because that is when the pat
 applied: a change takes effect on the **next** server start, and the library says so in
 its log rather than leaving the delay to be discovered.
 
+## When the frequencies look absurd
+
+A radio reading **2108.000 MHz**, a knob that steps in **2.1 MHz**, a keypad that
+accepts a number and does nothing: all three are one fault, and it is not in the
+radio. **The native library is not in effect on that server.**
+
+Without the patch the engine serves its own eight frequencies — 87.8, 89.5, 91.3,
+91.9, 94.6, 96.6, 99.7, 102.5 — which are not evenly spaced, and the mod says so
+in the server log:
+
+```
+the engine's frequency table is not an even grid (8 bands) - radio profiles stay unapplied
+```
+
+Since 2026-09-02 that is all a player sees: radios fall back to the engine's own
+frequency and the keypad does not open. Before that fix the server also handed
+clients the eight as if they were a grid, and a radio still carrying an index from
+the real one was labelled with `87.8 + index × 2.1` — which is where 2108.000 came
+from. It was only ever the label; the radio was audible on a real vanilla channel
+the whole time.
+
+**What to check, in order:**
+
+1. `oz_frequencies.log` beside the server executable. `patched: redirected 12 bytes`
+   means the library is working and the fault is elsewhere.
+2. **No log file at all** means the library never ran: it is not beside the
+   executable that started, or the process was one of the game's own. A server
+   launched under a renamed or wrapped binary now names itself in that log instead
+   of failing in silence — so if the file exists and says `NOT PATCHED: loaded
+   into "…"`, add `-server` to its command line.
+3. A log ending in `NOT PATCHED: no match` means a game update moved the function.
+
 ## Documentation
 
 - [`native/README.md`](native/README.md) — the library: what it patches, how it finds

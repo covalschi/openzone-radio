@@ -21,10 +21,30 @@ Delivery is decided only on the server, so **stock clients need no native code**
 
 ## Server only, by design
 
-The proxy patches nothing unless the process was launched with `-server`. On a
-Diag stand the client and the server are the same executable in the same
-directory, so an ungated proxy would patch both — and the whole question this
-exists to answer is whether an unpatched client works against a patched server.
+The proxy patches nothing unless the process was launched with `-server`, or is
+named `DayZServer_x64.exe` — a dedicated server needs no such flag. On a Diag
+stand the client and the server are the same executable in the same directory,
+so an ungated proxy would patch both — and the whole question this exists to
+answer is whether an unpatched client works against a patched server.
+
+**A rejected process says so.** The gate used to return in silence for everything
+it turned away, and that made two opposite faults look identical: a DLL that was
+never there and a DLL that loaded and was refused both left no log at all. Since
+2026-09-02 a process that is none of the game's own — `DayZ_x64.exe`,
+`DayZDiag_x64.exe`, `DayZ_BE.exe`, `DayZLauncher.exe`, `CrashReporter.exe`,
+`DayZUninstaller.exe` — gets a line naming itself:
+
+```
+NOT PATCHED: loaded into "somewrapper.exe", which is neither DayZServer_x64.exe
+nor one of the game's own executables, and its command line carries no -server.
+If this IS the server, launch it with -server.
+```
+
+The game's own six stay silent, because the launcher and the BattlEye shim run on
+every ordinary start and a line each would bury the file. That is the whole
+difference: silence for the game, a name for a stranger. **A renamed or wrapped
+server binary is the one shape in which this gate can be wrong about a real
+server, and it is now the one shape that reports itself.**
 
 ## Build
 
@@ -82,6 +102,11 @@ one.
 `oz_frequencies.log`, beside the DLL. Every path through start-up writes a line,
 including the ones that patch nothing — the failure this file exists to prevent
 is a mod that quietly does nothing while appearing installed.
+
+**So the absence of this file is itself a reading**, and since the gate learned to
+name a stranger there are only two ways to get no log at all: the DLL is not
+beside the executable that ran, or the process was one of the game's own. Neither
+of those is "it loaded and something went wrong inside" — that case always writes.
 
 ```
 08:41:02  found: lookup at +0x5C7790, table at +0x114DF30, table is the known vanilla eight
