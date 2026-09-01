@@ -7,7 +7,9 @@ This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlik
 4.0 International (CC BY-NC-SA 4.0). The full licence text is in LICENSE.
 
 As the copyright holder, and in addition to the rights granted by that licence,
-the following permission is granted:
+the following permissions are granted:
+
+    1. SERVERS THAT TAKE MONEY
 
     Running this mod on a game server is not considered commercial use, even if
     that server accepts donations, sells cosmetics, or sells priority queue
@@ -21,7 +23,41 @@ the following permission is granted:
     моду -- чи будь-якої його похідної -- у платну поставку заборонені без
     письмового дозволу автора.
 
-This is an ADDITIONAL PERMISSION, not an additional restriction. Section
+    2. REPACKING
+
+    You may repack this mod: unpack it, change it, merge it into a modpack, and
+    redistribute the result. Most DayZ mods forbid this, so silence would be
+    read as a refusal -- it is not. Three conditions come from the licence
+    itself and are repeated here because a repacker rarely reads it:
+
+      - say where it came from (BY): name the mod and link this repository;
+      - keep the same licence (SA): your repack is CC BY-NC-SA 4.0 too, and
+        carries this NOTICE;
+      - do not sell it (NC): see permission 1 above. Repacking is free, the
+        result is not for sale, and putting it behind a paywall -- including a
+        "donate to download" one -- is selling.
+
+    A repack may not be signed with the author's key. Sign it with your own:
+    the key says who stands behind the build, and only you can stand behind
+    yours.
+
+    Ви можете перепаковувати цей мод: розпакувати, змінити, влити в модпак і
+    поширювати результат. Більшість модів DayZ це забороняє, тож мовчання
+    читалося б як відмова -- це не відмова. Три умови випливають із самої
+    ліцензії й повторені тут, бо той, хто перепаковує, рідко її читає:
+
+      - скажіть, звідки це (BY): назвіть мод і дайте посилання на цей
+        репозиторій;
+      - збережіть ту саму ліцензію (SA): ваш перепак теж CC BY-NC-SA 4.0 і
+        несе цей NOTICE;
+      - не продавайте (NC): див. дозвіл 1 вище. Перепаковувати вільно,
+        результат продажу не підлягає, а сховати його за оплатою -- включно з
+        «задонать, щоб завантажити» -- це продаж.
+
+    Перепак не можна підписувати ключем автора. Підпишіть своїм: ключ каже,
+    хто стоїть за збіркою, а за свою можете ручатися тільки ви.
+
+These are ADDITIONAL PERMISSIONS, not additional restrictions. Section
 2(a)(5)(B) of CC BY-NC-SA 4.0 forbids downstream parties from imposing extra
 restrictions; it does not prevent the licensor from granting more than the
 licence itself grants.

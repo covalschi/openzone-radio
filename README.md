@@ -1,6 +1,6 @@
 # OpenZone Radio
 
-*[Українською](README.uk.md)*
+*[Українською](README.uk.md)* · [**Steam Workshop**](https://steamcommunity.com/sharedfiles/filedetails/?id=3794105144)
 
 DayZ ships with **eight** radio frequencies. This mod turns that into as many as you
 configure — up to thousands — so a server can have real channels instead of eight
@@ -138,5 +138,13 @@ separation.
 
 ## Licence
 
-CC BY-NC-SA 4.0, with an additional permission for servers that take donations — see
-[NOTICE](NOTICE).
+CC BY-NC-SA 4.0, plus two additional permissions in [NOTICE](NOTICE):
+
+**Repacking is allowed.** Unpack it, change it, put it in a modpack, redistribute it.
+Most DayZ mods forbid this, so silence would read as a refusal — it is not one. Keep the
+attribution, keep the licence, sign the repack with **your own** key rather than the
+author's, and do not sell it.
+
+**Selling is not.** A server taking donations, selling cosmetics or selling queue slots
+is fine and is not commercial use. Selling the mod itself, or any derivative, or putting
+it behind a paywall — including a "donate to download" one — is not.

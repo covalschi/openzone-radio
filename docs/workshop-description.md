@@ -78,10 +78,31 @@ from the repository if you run the OpenZone PDA:
 Both declare their dependencies hard, which in DayZ means a blocking window before the
 game loads. Install a companion only together with what it needs.
 
+[h1]Repacking: YES. Selling: NO.[/h1]
+
+[b]You may repack this mod.[/b] Unpack it, change it, put it in a modpack, hand the
+result to your players. Most DayZ mods forbid that, so saying nothing would read as a
+refusal — this is not one.
+
+Three conditions, and they are the licence rather than my preferences:
+
+[list]
+[*] Say where it came from, and link this page or the repository
+[*] Keep the same licence on your repack (CC BY-NC-SA 4.0), and carry the NOTICE
+[*] Do not sell it
+[/list]
+
+[b]Sign your repack with your OWN key, not mine.[/b] A key says who stands behind a
+build, and only you can stand behind yours.
+
+[b]Selling.[/b] Running this on a server that takes donations, sells cosmetics or sells
+queue slots is fine — that is not commercial use. Selling the mod itself or any
+derivative of it, or putting it behind a paywall (a "donate to download" one counts), is
+not allowed.
+
 [h1]Licence[/h1]
 
-CC BY-NC-SA 4.0, with an additional permission for servers that take donations. Full
-text in the repository.
+CC BY-NC-SA 4.0 plus the permissions above. Full text in the repository.
 ```
 
 ---
@@ -153,8 +174,29 @@ text in the repository.
 Обидва оголошують свої залежності жорстко, а це в DayZ означає блокуюче вікно ще до
 завантаження гри. Ставте супутника лише разом із тим, що йому потрібно.
 
+[h1]Перепаковувати: ТАК. Продавати: НІ.[/h1]
+
+[b]Цей мод можна перепаковувати.[/b] Розпакуйте, змініть, покладіть у модпак, віддайте
+результат своїм гравцям. Більшість модів DayZ це забороняє, тож мовчання читалося б як
+відмова — це не відмова.
+
+Три умови, і це ліцензія, а не мої побажання:
+
+[list]
+[*] Скажіть, звідки це, і дайте посилання на цю сторінку або репозиторій
+[*] Збережіть ту саму ліцензію на перепаку (CC BY-NC-SA 4.0) і несіть NOTICE
+[*] Не продавайте
+[/list]
+
+[b]Підписуйте перепак СВОЇМ ключем, не моїм.[/b] Ключ каже, хто стоїть за збіркою, а за
+свою можете ручатися тільки ви.
+
+[b]Продаж.[/b] Крутити це на сервері, який приймає донати, продає косметику чи місця в
+черзі, — нормально, це не комерційне використання. А продавати сам мод чи будь-яку його
+похідну, або давати доступ за оплату («задонать, щоб завантажити» теж рахується), — не
+можна.
+
 [h1]Ліцензія[/h1]
 
-CC BY-NC-SA 4.0 з додатковим дозволом для серверів, які приймають донати. Повний текст —
-у репозиторії.
+CC BY-NC-SA 4.0 плюс дозволи вище. Повний текст — у репозиторії.
 ```

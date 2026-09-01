@@ -1,7 +1,9 @@
 # Publishing to the Steam Workshop
 
-What is ready, what is not, and what has to be decided by a person. Written
-2026-09-01 while preparing the first publication.
+**Published 2026-09-01:** https://steamcommunity.com/sharedfiles/filedetails/?id=3794105144
+
+Only `@OpenZone_Radio` is on the Workshop. What is ready, what is not, and what has to
+be decided by a person.
 
 *Українською — нижче, у другій половині файла.*
 
@@ -52,11 +54,22 @@ frequencies are distinct and the router keys on their bytes, so the risk is smal
 "measured distinct" and "heard separated" are different sentences. Two players, two
 handheld radios, eight presses of tune apart.
 
-## The publish itself
+## Publishing again
 
-The DayZ Tools **Publisher** uploads a `@Mod` folder and writes `meta.cpp` itself; do
-not write that file by hand. The owner drives Publisher — the GUI tools are not run from
-here.
+Give **Publisher** the folder itself:
+
+```
+E:openzoneopenzone-radio@OpenZone_Radio
+```
+
+Not the repository, not `addons` inside it. Publisher writes `meta.cpp` there and puts
+the Workshop item id in it — **keep that file**, because it is what makes the next
+upload update item 3794105144 instead of creating a second one. Do not write it by hand.
+
+`mod_build` overwrites `addons/` and leaves `mod.cpp`, `keys/` and `meta.cpp` alone, so
+re-publishing from the same folder is safe.
+
+The owner drives Publisher — the GUI tools are not run from here.
 
 ---
 
