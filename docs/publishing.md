@@ -7,6 +7,19 @@ What is ready, what is not, and what has to be decided by a person. Written
 
 ## Ready
 
+- **Only `@OpenZone_Radio` goes to the Workshop.** Owner's decision 2026-09-01. The two
+  glue mods ship through this repository and nowhere else: their dependencies are hard,
+  so a subscriber without OpenZone Core and PDA would meet a blocking window before the
+  game loads. One Workshop item, three mods in git.
+- **Signed.** Key `ZoneProtocol`, created 2026-09-01 with `DSCreateKey`. All three pbos
+  carry `*.ZoneProtocol.bisign`, and `keys/ZoneProtocol.bikey` ships inside every `@Mod`
+  folder and at the repository root, so a server running `verifySignatures = 2` can
+  accept them.
+  > **The private key is not in git and must never be.** `keys/ZoneProtocol.biprivatekey`
+  > exists only on the build machine and is covered by `.gitignore`. **Back it up
+  > somewhere outside this repository.** Losing it means every future release is signed
+  > by a different key, and every server that installed the old `.bikey` has to replace
+  > it. Anyone who obtains it can sign a mod as you.
 - **`@OpenZone_Radio` stands alone.** Verified, not assumed: a server booted with
   Community Framework and this mod and nothing else — no Core, no PDA, no VPP, no glue —
   and reported `radio loaded: bands=8 profiles=11` with zero errors. `requiredAddons`
@@ -26,21 +39,9 @@ What is ready, what is not, and what has to be decided by a person. Written
 
 ## Not ready, and each needs a person
 
-**Signing keys.** The build says `no signing keys: keys/ does not exist, so the pbo is
-unsigned`. Servers running `verifySignatures = 2` will refuse an unsigned pbo. Making a
-key is one DSUtils command, but the private key is a **secret that must never enter the
-repository**, and where it lives is the owner's decision. Decide before the first
-publish: re-signing later changes the key servers already trust.
-
 **A picture and a logo.** `mod.cpp` deliberately does not point at `picture` or `logo`
 files: DayZ draws a blank for a missing texture and says nothing, so a wrong path is
 worse than none. Add the fields when the art exists.
-
-**Three Workshop items or one.** The repository builds three mods with different
-dependencies. Publishing all three as one item would give every subscriber the two glue
-mods, whose dependencies are **hard** — a blocking window before the game loads for
-anyone without OpenZone Core and PDA. Three items is the safe shape; one item is
-defensible only if the glue is dropped from it.
 
 **The version number.** `mod.cpp` says `0.1` in all three. It is a claim about maturity
 that the Workshop shows to strangers.
@@ -66,6 +67,18 @@ here.
 
 ## Готове
 
+- **У Workshop іде ЛИШЕ `@OpenZone_Radio`.** Рішення власника 2026-09-01. Дві склейки
+  розповсюджуються через цей репозиторій і більше ніяк: їхні залежності жорсткі, тож
+  підписник без OpenZone Core і PDA дістав би блокуюче вікно ще до завантаження гри.
+  Один елемент Workshop, три моди в git.
+- **Підписано.** Ключ `ZoneProtocol`, створений 2026-09-01 через `DSCreateKey`. Усі три
+  pbo несуть `*.ZoneProtocol.bisign`, а `keys/ZoneProtocol.bikey` лежить і в кожній теці
+  `@Mod`, і в корені репозиторію, тож сервер із `verifySignatures = 2` їх прийме.
+  > **Приватного ключа в git немає, і бути не мусить.** `keys/ZoneProtocol.biprivatekey`
+  > існує лише на складальній машині й покритий `.gitignore`. **Зробіть резервну копію
+  > поза цим репозиторієм.** Втратити його означає, що кожен наступний випуск підписаний
+  > іншим ключем, і кожен сервер, який поставив старий `.bikey`, мусить його замінити.
+  > Хто його дістане, зможе підписувати моди вашим ім'ям.
 - **`@OpenZone_Radio` самостійний.** Перевірено, а не припущено: сервер піднято з
   Community Framework і цим модом — без ядра, КПК, VPP і склейок — і він відзвітував
   `radio loaded: bands=8 profiles=11` без жодної помилки. У `requiredAddons` лише
@@ -84,21 +97,9 @@ here.
 
 ## Не готове, і кожне потребує людини
 
-**Ключі підпису.** Збірка каже `no signing keys: keys/ does not exist, so the pbo is
-unsigned`. Сервери з `verifySignatures = 2` непідписаний pbo відкинуть. Зробити ключ —
-одна команда DSUtils, але приватний ключ — **таємниця, якій не місце в репозиторії**, і
-де він житиме, вирішує власник. Вирішити треба до першої публікації: перепідписати
-пізніше означає змінити ключ, якому сервери вже довіряють.
-
 **Картинка й логотип.** `mod.cpp` навмисне не вказує на `picture` і `logo`: DayZ малює
 порожнечу замість відсутньої текстури й мовчить, тож хибний шлях гірший за відсутній.
 Додати поля, коли з'явиться арт.
-
-**Три елементи Workshop чи один.** Репозиторій збирає три моди з різними залежностями.
-Опублікувати всі три одним елементом означає дати кожному підписнику дві склейки, чиї
-залежності **жорсткі**, — блокуюче вікно ще до завантаження гри для всіх, у кого немає
-OpenZone Core і PDA. Три елементи — безпечна форма; один виправданий лише якщо склейки з
-нього прибрати.
 
 **Номер версії.** У `mod.cpp` в усіх трьох стоїть `0.1`. Це твердження про зрілість, яке
 Workshop показує стороннім.

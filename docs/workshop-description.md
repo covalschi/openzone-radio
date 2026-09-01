@@ -66,7 +66,9 @@ Community Framework and this mod and nothing else.
 
 [h1]Optional companions[/h1]
 
-Two separate mods in the same repository, for servers that also run the OpenZone PDA:
+Two more mods live in the repository -- NOT on the Workshop, because their dependencies
+are hard and would block the game for anyone without OpenZone Core and PDA. Download them
+from the repository if you run the OpenZone PDA:
 
 [list]
 [*] [b]OpenZone Radio PDA[/b] — the radio as a board in a PDA device bay
@@ -139,7 +141,9 @@ text in the repository.
 
 [h1]Необов'язкові супутники[/h1]
 
-Два окремі моди з того самого репозиторію, для серверів, які крутять ще й OpenZone PDA:
+Ще два моди живуть у репозиторії -- НЕ в Workshop, бо їхні залежності жорсткі й
+заблокували б гру всім, у кого немає OpenZone Core і PDA. Беріть їх із репозиторію, якщо
+крутите OpenZone PDA:
 
 [list]
 [*] [b]OpenZone Radio PDA[/b] — рація платою у відсіку приладу
