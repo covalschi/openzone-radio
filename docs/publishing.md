@@ -14,9 +14,9 @@ be decided by a person.
   so a subscriber without OpenZone Core and PDA would meet a blocking window before the
   game loads. One Workshop item, three mods in git.
 - **Signed.** Key `ZoneProtocol`, created 2026-09-01 with `DSCreateKey`. All three pbos
-  carry `*.ZoneProtocol.bisign`, and `keys/ZoneProtocol.bikey` ships inside every `@Mod`
-  folder and at the repository root, so a server running `verifySignatures = 2` can
-  accept them.
+  carry `*.ZoneProtocol.bisign`, and `keys/ZoneProtocol.bikey` is placed inside every
+  `@Mod` folder at build time, so a server running `verifySignatures = 2` can accept
+  them. The key lives once in git, in `keys/` at the repository root.
   > **The private key is not in git and must never be.** `keys/ZoneProtocol.biprivatekey`
   > exists only on the build machine and is covered by `.gitignore`. **Back it up
   > somewhere outside this repository.** Losing it means every future release is signed
@@ -56,40 +56,51 @@ handheld radios, eight presses of tune apart.
 
 ## Publishing again
 
-Give **Publisher** the folder itself:
+The `@Mod` folders are **build output and are not in git**. Three steps, in order:
+
+```powershell
+# 1. pack and sign        -> @OpenZone_Radio/addons/
+mod_build                  # via the dayz MCP, or Addon Builder by hand
+
+# 2. put the rest in place -> mod.cpp, meta.cpp, keys/
+.\package.ps1
+
+# 3. upload
+```
+
+Then give **Publisher** the folder itself:
 
 ```
 E:\openzone\openzone-radio\@OpenZone_Radio
 ```
 
-Not the repository, not `addons` inside it.
+Not the repository, not `packaging/`, not `addons` inside it.
 
-`meta.cpp` in that folder is what ties it to Workshop item 3794105144: without it the
-next upload creates a SECOND item instead of updating this one. **Keep it, and keep it
-in git.**
+**Do not skip step 2.** `mod_build` writes only `addons/`; the files that make the folder
+a publishable mod come from `packaging/`. `.\package.ps1 -Check` says what is missing or
+stale without changing anything.
 
-> The first publish (2026-09-01) left none — the folder had `addons`, `keys` and
-> `mod.cpp` and nothing else, and a search of the machine for a `meta.cpp` or for the
-> item id turned up nothing at all. It was written by hand afterwards, from the id in
-> the Workshop URL, in the format an installed Workshop mod uses:
->
-> ```
-> protocol = 1;
-> publishedid = 3794105144;
-> name = "OpenZone Radio";
-> ```
->
-> `timestamp` is omitted deliberately: a real one carries a value Publisher generates,
-> and inventing a number to sit in a field that means "when this build was uploaded"
-> would be a lie in a file whose whole job is bookkeeping. Publisher fills it on the
-> next upload.
->
-> If a later publish still creates a second item, the id here is not being read, and
-> the answer is to publish once more from a folder where Publisher itself wrote the
-> file — then commit that version over this one.
+### meta.cpp, and why it is in packaging/
 
-`mod_build` overwrites `addons/` and leaves `mod.cpp`, `keys/` and `meta.cpp` alone, so
-re-publishing from the same folder is safe.
+`meta.cpp` ties a local folder to a Workshop item. Without it the next upload creates a
+**second** item instead of updating this one.
+
+The first publish (2026-09-01, item 3794105144) left none — the folder held `addons`,
+`keys` and `mod.cpp` and nothing else, and a search of the machine found no `meta.cpp`
+and no file containing the id anywhere. It was reconstructed from the Workshop URL, in
+the format an installed Workshop mod carries, and it lives in `packaging/` so that
+deleting a build folder can never take it away again.
+
+`timestamp` is deliberately absent: it means "when this build was uploaded", and a
+number invented to fill it would be false in a file whose only job is bookkeeping.
+Publisher writes a real one.
+
+**If Publisher rewrites `meta.cpp`** — a new timestamp, or an id for a mod published for
+the first time — copy it back into `packaging/<Mod>/` and commit it. Otherwise the next
+`package.ps1` overwrites Publisher's version with the older one.
+
+**If a publish still forks a second item**, the id is not being read: publish once more
+from a folder Publisher assembled itself, then commit that `meta.cpp` over this one.
 
 The owner drives Publisher — the GUI tools are not run from here.
 
@@ -107,8 +118,9 @@ The owner drives Publisher — the GUI tools are not run from here.
   підписник без OpenZone Core і PDA дістав би блокуюче вікно ще до завантаження гри.
   Один елемент Workshop, три моди в git.
 - **Підписано.** Ключ `ZoneProtocol`, створений 2026-09-01 через `DSCreateKey`. Усі три
-  pbo несуть `*.ZoneProtocol.bisign`, а `keys/ZoneProtocol.bikey` лежить і в кожній теці
-  `@Mod`, і в корені репозиторію, тож сервер із `verifySignatures = 2` їх прийме.
+  pbo несуть `*.ZoneProtocol.bisign`, а `keys/ZoneProtocol.bikey` кладеться в кожну теку
+  `@Mod` під час збірки, тож сервер із `verifySignatures = 2` їх прийме. У git ключ
+  лежить один раз — у `keys/` в корені репозиторію.
   > **Приватного ключа в git немає, і бути не мусить.** `keys/ZoneProtocol.biprivatekey`
   > існує лише на складальній машині й покритий `.gitignore`. **Зробіть резервну копію
   > поза цим репозиторієм.** Втратити його означає, що кожен наступний випуск підписаний
@@ -145,7 +157,51 @@ Workshop показує стороннім.
 «почуто роздільними» це різні речення. Двоє гравців, дві ручні рації, вісім натискань
 «налаштувати» одне від одного.
 
-## Сама публікація
+## Публікація ще раз
 
-**Publisher** із DayZ Tools вивантажує теку `@Mod` і пише `meta.cpp` сам; руками цей
-файл не пишуть. Publisher запускає власник — GUI-інструменти звідси не запускаються.
+Теки `@Mod` — це **результат збірки, і в git їх немає**. Три кроки, по порядку:
+
+```powershell
+# 1. запакувати й підписати -> @OpenZone_Radio/addons/
+mod_build                    # через MCP dayz або Addon Builder руками
+
+# 2. покласти решту          -> mod.cpp, meta.cpp, keys/
+.\package.ps1
+
+# 3. вивантажити
+```
+
+Далі **Publisher** отримує саму теку:
+
+```
+E:\openzone\openzone-radio\@OpenZone_Radio
+```
+
+Не репозиторій, не `packaging/`, не `addons` усередині неї.
+
+**Крок 2 не пропускати.** `mod_build` пише лише `addons/`; файли, які роблять теку
+модом, придатним до публікації, беруться з `packaging/`. `.\package.ps1 -Check` скаже,
+чого бракує або що застаріло, нічого не змінюючи.
+
+### meta.cpp, і чому він у packaging/
+
+`meta.cpp` прив'язує локальну теку до елемента Workshop. Без нього наступна вивантаження
+створює **другий** елемент замість оновлення цього.
+
+Перша публікація (2026-09-01, елемент 3794105144) його не лишила — у теці були `addons`,
+`keys` і `mod.cpp`, і більше нічого, а пошук по машині не знайшов ані `meta.cpp`, ані
+жодного файла з цим номером. Його відновили з URL Workshop, у форматі, який несе
+встановлений мод із Workshop, і живе він у `packaging/`, щоб видалення теки збірки більше
+ніколи його не забрало.
+
+`timestamp` навмисно відсутній: він означає «коли цю збірку вивантажили», і вигадане
+число було б неправдою у файлі, чия єдина робота — облік. Publisher запише справжній.
+
+**Якщо Publisher перепише `meta.cpp`** — новий timestamp або id мода, опублікованого
+вперше, — скопіюйте його назад у `packaging/<Мод>/` і закомітьте. Інакше наступний
+`package.ps1` перезапише версію Publisher старішою.
+
+**Якщо публікація все одно роздвоїть елемент**, номер звідти не читається: опублікуйте ще
+раз із теки, яку зібрав сам Publisher, і закомітьте той `meta.cpp` поверх цього.
+
+Publisher запускає власник — GUI-інструменти звідси не запускаються.
