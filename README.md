@@ -131,7 +131,7 @@ All of it is JSON in the server's `-profiles` directory, under `OpenZone/`:
 | File | What it holds |
 |---|---|
 | `OZ_Radio_Profiles.json` | The radio profiles: bands, steps, limits |
-| `OZ_Radio_Settings.json` | Mod settings |
+| `OZ_Radio_Settings.json` | Mod settings, including how loud the air is |
 | `OZ_Radio_Frequencies.json` | Derived from the profiles, read by the native library |
 
 `OZ_Radio_Frequencies.json` is **not written by hand**. The mod derives it from the
@@ -141,6 +141,29 @@ divisor of every step — so the ether is always exactly what the radios ask for
 The native library reads it once, at process start, because that is when the patch is
 applied: a change takes effect on the **next** server start, and the library says so in
 its log rather than leaving the delay to be discovered.
+
+### How loud the air is
+
+`OZ_Radio_Settings.json` carries two multipliers, both `1.0` by default, both applied
+on the client and decided by the server — on a roleplay server how well the air carries
+is part of the balance rather than a matter of taste.
+
+| Setting | What it multiplies |
+|---|---|
+| `SquelchGain` | The burst of static on key down and key up |
+| `VoiceGain` | Voice coming out of a radio |
+
+**`VoiceGain` is the only way to change radio loudness at all.** DayZ's sound options
+have five sliders — master, effects, music, VoIP output, VoIP threshold — and none of
+them is radio; the engine has a radio channel, but nothing in the game exposes it. A
+player who finds the air too quiet has no setting to reach for, so this one stands in
+for it.
+
+Both are read when the server starts and travel to each client on connect, so a change
+needs a server restart.
+
+The squelch's own level is set in `config.cpp`, not here: this multiplier is for
+tuning on a running server without a rebuild.
 
 ## When the frequencies look absurd
 
