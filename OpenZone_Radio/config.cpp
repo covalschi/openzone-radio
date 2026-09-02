@@ -61,14 +61,6 @@ class CfgMods
 
         dependencies[] = {"Game", "World", "Mission"};
 
-        // БЕЗ ЦЬОГО РЯДКА CF_ModStorage не працює й не скаржиться.
-        //
-        // CF реєструє хранилище лише для модів, у яких storageVersion > 0
-        // (ModStructure.HasModStorage). Нуль або відсутність -- і наш блок не
-        // пишеться, не читається, і жодного рядка про це в лозі не буде:
-        // рація просто щоразу прокидатиметься невибраною.
-        storageVersion = 1;
-
         // The frequency keypad's key. A mod gets exactly one inputs file --
         // a second is not read -- so everything this mod binds goes in here.
         inputs = "OpenZone_Radio/data/inputs.xml";

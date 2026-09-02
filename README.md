@@ -176,24 +176,8 @@ found. The order is place first, freshness second:
 3. otherwise the one **in cargo**, most recently held — unless `PttFromCargo` is off
 
 A worn radio beats one in a backpack even if the backpack one was held later: the place
-is the intent, and the timestamp only separates equals.
-
-**A radio you have never picked up does not speak at all.** Taking one in hands is what
-chooses it, and that choice sticks to the radio — it survives logging out and it survives
-a server restart, so the gesture is needed once per radio rather than once per session.
-Taking a different one in hands moves the choice to it; a player has one working radio,
-not several. Only the radio actually in your hands is exempt, because holding it is the
-same statement.
-
-Without that rule the traversal order of your inventory would choose for you, silently,
-between radios on different frequencies.
-
-The HUD icon follows exactly the same rule and lights only when the key will actually do
-something — which, with this rule, is the only warning you get.
-
-> The choice is stored through Community Framework's ModStorage, which means the mod's
-> `CfgMods` class name is now part of the save format. Renaming it would leave every
-> player's choice unreachable.
+is the intent, and the timestamp only separates equals. The HUD icon follows the same
+rule, so it lights when the key will do something and not before.
 
 **There is no setting for the loudness of the voice itself, and that is a finding
 rather than an omission.** The engine has a radio mixer channel, and DayZ's sound
