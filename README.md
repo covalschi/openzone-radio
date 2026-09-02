@@ -151,7 +151,7 @@ its log rather than leaving the delay to be discovered.
 | `SquelchGain` | Multiplies the burst of static. `1.0` is the level set in `config.cpp` |
 | `SquelchRange` | How far it is heard, in metres |
 | `MirrorPtt` | Adds your push-to-talk key as a second binding on the game's voice key, so one press does both. `true` by default |
-| `PttFromCargo` | Whether a radio in a backpack may speak. `false` by default |
+| `PttFromCargo` | Whether a radio in a backpack may speak. `true` by default |
 
 `SquelchRange` moves in **steps** — 5, 10, 15, 20, 25 — and the nearest one is
 taken; ask for 13 and you get 15, and the log says so rather than leaving you to
@@ -173,7 +173,7 @@ found. The order is place first, freshness second:
 
 1. the radio **in your hands** — it wins outright
 2. otherwise the one **on a slot**, most recently held
-3. with `PttFromCargo` on, otherwise the one **in cargo**, most recently held
+3. otherwise the one **in cargo**, most recently held — unless `PttFromCargo` is off
 
 A worn radio beats one in a backpack even if the backpack one was held later: the place
 is the intent, and the timestamp only separates equals.
