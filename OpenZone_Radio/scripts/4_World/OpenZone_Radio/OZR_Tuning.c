@@ -45,6 +45,28 @@ modded class TransmitterBase
     // замовкнути -- див. OZR_Module.OZR_SetAll.
     private int m_OZR_HeldAt = 0;
 
+    // «Це моя робоча рація» -- біт, який ПЕРЕЖИВАЄ вихід і рестарт.
+    //
+    // Ставиться, коли рація потрапляє в руки, і в ту саму мить знімається з
+    // усіх інших рацій цього гравця: робоча одна.
+    //
+    // Возиться в двох напрямках, і обидва потрібні.
+    //
+    // КЛІЄНТУ -- бо рація, якої не вибирали, не говорить зовсім, і іконка PTT
+    // лишається єдиним способом дізнатись про це до натискання. Вивести біт
+    // сам клієнт не може: m_OZR_HeldAt серверний і на клієнті вічно нуль.
+    //
+    // У ЗБЕРЕЖЕННЯ -- бо без цього правило «не тримав, не говориш» означало б
+    // мертву гашетку після КОЖНОГО входу в гру, а не лише після рестарту
+    // сервера: предмети перестворюються при кожному конекті (видно по
+    // "PlayerBase OnStoreLoad SUCCESS" у серверному лозі), і поле в пам'яті
+    // не переживає цього.
+    //
+    // Зберігається саме БІТ, а не час. m_OZR_HeldAt -- це GetGame().GetTime(),
+    // відлік від старту місії; числа з різних сесій незрівнянні, і зберігати
+    // їх означало б порівнювати вчорашній полудень із сьогоднішнім ранком.
+    private bool m_OZR_Chosen = false;
+
     // Не ref: EffectSound належить SEffectManager, і ваніль тримає свій
     // m_SoundLoop так само (transmitterbase.c:7).
     private EffectSound m_OZR_Squelch;
@@ -74,6 +96,7 @@ modded class TransmitterBase
         // нього нічого не знає. Без цього біта squelch чув би лише той, хто
         // натиснув, бо звук грає КЛІЄНТ, а рішення приймає сервер.
         RegisterNetSyncVariableBool("m_OZR_Air");
+        RegisterNetSyncVariableBool("m_OZR_Chosen");
     }
 
     // Єдине місце, де частота міняється. Все інше кличе саме його, щоб не
@@ -215,7 +238,10 @@ modded class TransmitterBase
             return;
 
         if (newLoc.GetType() == InventoryLocationType.HANDS)
+        {
             m_OZR_HeldAt = GetGame().GetTime();
+            OZR_ClaimFrom(GetHierarchyRootPlayer());
+        }
 
         // Рація змінила місце з відкритим ефіром -- закриваємо, якщо його
         // тримала КЛАВІША, і лишаємо, якщо замок.
@@ -239,6 +265,20 @@ modded class TransmitterBase
     int OZR_HeldAt()
     {
         return m_OZR_HeldAt;
+    }
+
+    bool OZR_Chosen()
+    {
+        return m_OZR_Chosen;
+    }
+
+    void OZR_SetChosen(bool on)
+    {
+        if (m_OZR_Chosen == on)
+            return;
+
+        m_OZR_Chosen = on;
+        SetSynchDirty();
     }
 
     // Наскільки ця рація «на видноті» -- більше значить ближче до рук.
@@ -270,6 +310,80 @@ modded class TransmitterBase
             return 1;
 
         return 0;
+    }
+
+    // Стати єдиною робочою рацією цього гравця.
+    //
+    // Обхід інвентаря коштує тут дешево: він трапляється, лише коли рацію
+    // беруть у руки -- кілька разів за сесію, -- і всередині це каст на
+    // предмет, а дорогий OZR_Profiles.For питається тільки в передатчиків,
+    // яких у гравця одиниці. Для масштабу: той самий обхід клієнт робить
+    // п'ять разів на СЕКУНДУ, поки тримають гашетку.
+    private void OZR_ClaimFrom(Man owner)
+    {
+        OZR_SetChosen(true);
+
+        if (!owner || !owner.GetInventory())
+            return;
+
+        array<EntityAI> items = new array<EntityAI>();
+        if (!owner.GetInventory().EnumerateInventory(InventoryTraversalType.PREORDER, items))
+            return;
+
+        for (int i = 0; i < items.Count(); i++)
+        {
+            TransmitterBase t = TransmitterBase.Cast(items[i]);
+            if (!t || t == this)
+                continue;
+
+            if (!OZR_Profiles.For(t.GetType()))
+                continue;
+
+            t.OZR_SetChosen(false);
+        }
+    }
+
+    // ------------------------------------------------------- persistence
+    //
+    // Через CF_ModStorage, а не власним OnStoreSave: свій запис у потік
+    // ламає предмети, збережені попередньою версією мода, бо ctx.Read на
+    // полі, якого в них немає, обриває читання. ModStorage несе кожен мод
+    // окремим блоком і чужі блоки береже, тож ані додавання поля, ані зняття
+    // мода з сервера не псує сейв.
+    //
+    // ЦІНА, і вона назавжди: ім'я класу в CfgMods стає частиною формату
+    // збереження. CF мітить блок парою хешів цього імені (name.Hash() і
+    // name.Reverse().Hash(), modstructure.c:53); перейменування дає інші
+    // хеші, старий блок стає «unknown<a,b>» і поле читається умовчанням.
+    // Байти при цьому цілі -- CF переписує чужі блоки назад (m_UnloadedMods),
+    // -- але дістати їх можна лише повернувши старе ім'я.
+    override void CF_OnStoreSave(CF_ModStorageMap storage)
+    {
+        super.CF_OnStoreSave(storage);
+
+        CF_ModStorage mine = storage.Get(OZR_Const.MOD_CLASS);
+        if (!mine)
+            return;
+
+        mine.Write(m_OZR_Chosen);
+    }
+
+    override bool CF_OnStoreLoad(CF_ModStorageMap storage)
+    {
+        if (!super.CF_OnStoreLoad(storage))
+            return false;
+
+        CF_ModStorage mine = storage.Get(OZR_Const.MOD_CLASS);
+        if (!mine)
+            return true;
+
+        // Читання, що не вдалось, -- не привід валити предмет: рація,
+        // збережена до появи цього поля, просто прийде невибраною, і гравець
+        // вибере її рукою. Втрата тут -- один жест, а не рація.
+        if (!mine.Read(m_OZR_Chosen))
+            m_OZR_Chosen = false;
+
+        return true;
     }
 
     // Предмет щойно підняли зі збереження -- рушій уже поставив збережений

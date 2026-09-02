@@ -202,7 +202,14 @@ class OZR_Ptt
             if (!t || !t.OZR_IsPowered() || !OZR_ClientGrid.For(t.GetType()))
                 continue;
 
-            if (t.OZR_SpeakRank(cargo) > 0)
+            int rank = t.OZR_SpeakRank(cargo);
+            if (rank == 0)
+                continue;
+
+            // Руки -- завжди; решта -- лише якщо цю рацію колись тримали.
+            // Той самий поріг, що в сервера, і саме тому біт синхронізується:
+            // без нього іконка світилась би над рацією, яка не заговорить.
+            if (rank == 3 || t.OZR_Chosen())
                 return true;
         }
         return false;
