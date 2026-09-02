@@ -57,6 +57,7 @@ class OZR_Module : CF_ModuleWorld
         {
             GetRPCManager().AddRPC(OZR_Const.MOD, OZR_Const.RPC_GRID_RES, this, SingleplayerExecutionType.Client);
             GetRPCManager().AddRPC(OZR_Const.MOD, OZR_Const.RPC_PROF_RES, this, SingleplayerExecutionType.Client);
+            GetRPCManager().AddRPC(OZR_Const.MOD, OZR_Const.RPC_AUDIO_RES, this, SingleplayerExecutionType.Client);
 
             m_PullsLeft = PULL_TRIES;
             m_PullTimer = new Timer(CALL_CATEGORY_SYSTEM);
@@ -193,6 +194,17 @@ class OZR_Module : CF_ModuleWorld
         GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_GRID_RES,
             new Param3<float, float, int>(gBase, gStep, gCount),
             true, sender);
+
+        // Гучності їдуть тим самим запитом, бо питання те саме: «що цей
+        // сервер про ефір думає». Окремим пакетом, а не полями в сітці, --
+        // сітка може бути відсутньою, а гучності діють однаково завжди.
+        OZR_Settings st = OZR_Settings.Get();
+        if (st)
+        {
+            GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_AUDIO_RES,
+                new Param2<float, float>(st.SquelchGain, st.VoiceGain),
+                true, sender);
+        }
 
         OZR_Profiles cfg = OZR_Profiles.Get();
         if (!cfg || !cfg.Radios)
@@ -443,6 +455,22 @@ class OZR_Module : CF_ModuleWorld
 
         if (m_PullTimer)
             m_PullTimer.Stop();
+    }
+
+    void OZR_AudioRes(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        if (type != CallType.Client)
+            return;
+
+        Param2<float, float> p = new Param2<float, float>(1.0, 1.0);
+        if (!ctx.Read(p))
+            return;
+
+        OZR_Audio.SetGains(p.param1, p.param2);
+
+        string got = "audio: squelch x" + p.param1.ToString();
+        got += ", radio voice x" + p.param2.ToString();
+        OZR_Log.Info(got);
     }
 
     void OZR_ProfRes(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)

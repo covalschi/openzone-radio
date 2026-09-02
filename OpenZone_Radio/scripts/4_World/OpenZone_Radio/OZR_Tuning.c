@@ -349,10 +349,10 @@ modded class TransmitterBase
         OZR_Squelch();
     }
 
-    // Ванільний набір статики, а не власний файл: рація його вже несе
-    // (PersonalRadio.SOUND_RADIO_TURNED_ON), він звучить саме як ефір, і мод
-    // лишається без жодного аудіоресурсу -- тобто його можна поставити з
-    // Workshop і нічого не докладати.
+    // Ванільний СЕМПЛ у власному наборі: аудіофайла мод не везе, але рівень
+    // задає свій. Ванільний шейдер зроблений тихим навмисне (volume = 0.0501,
+    // range = 13) -- це фоновий шип увімкненої рації, а не подія, яку треба
+    // помітити. Подробиці й числа -- у config.cpp.
     //
     // Набір ЗАЦИКЛЕНИЙ, тож зупиняємо самі: сплеск -- це коротко, а не «шум
     // до кінця світу», і довжина тут та сама на відкриття й на закриття.
@@ -361,15 +361,27 @@ modded class TransmitterBase
         if (!GetGame() || GetGame().IsDedicatedServer())
             return;
 
-        if (SOUND_RADIO_TURNED_ON == "")
-            return;
-
         // IsWorking(), а не IsSwitchedOn(): у вимкненої коробки ефіру не
         // буває, і сплеск від неї був би звуком події, якої не сталося.
         if (!OZR_IsPowered())
             return;
 
-        PlaySoundSetLoop(m_OZR_Squelch, SOUND_RADIO_TURNED_ON, 0, 0);
+        if (!PlaySoundSetLoop(m_OZR_Squelch, OZR_Const.SQUELCH_SET, 0, 0))
+        {
+            // Рівень Info, і лише на ВІДМОВІ. Набір, якого рушій не знайшов,
+            // і набір, який просто тихий, зовні однакові -- обидва мовчать, --
+            // а лікуються протилежно. Один рядок раз на сесію того вартий.
+            OZR_Log.Warn("squelch: the engine would not play " + OZR_Const.SQUELCH_SET + " - check CfgSoundSets and requiredAddons");
+            return;
+        }
+
+        // Гучність ставимо ПІСЛЯ створення: набір ванільний, і його власний
+        // рівень підібраний під тихий фоновий шум увімкненої рації, а не під
+        // короткий сплеск, який мусить бути помітним. Множник приходить із
+        // сервера, бо це питання балансу, а не вух.
+        if (m_OZR_Squelch)
+            m_OZR_Squelch.SetSoundVolume(OZR_Audio.SquelchGain());
+
         GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(OZR_SquelchStop, OZR_Const.SQUELCH_MS, false);
     }
 

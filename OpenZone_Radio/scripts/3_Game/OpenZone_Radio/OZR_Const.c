@@ -34,6 +34,11 @@ class OZR_Const
     // губиться, довше починає читатись як несправність рації.
     static const int SQUELCH_MS = 140;
 
+    // Наш набір, а не ванільний: ванільний тихий за задумом (volume = 0.0501,
+    // range = 13 -- фоновий шип увімкненої рації). Наш успадковує його семпл
+    // і піднімає рівень; див. CfgSoundShaders у config.cpp.
+    static const string SQUELCH_SET = "OZR_Squelch_SoundSet";
+
     // Клас предмета, на якому міряємо таблицю частот. Ванільна рація --
     // єдиний ItemTransmitter, який точно є на будь-якому сервері.
     static const string BAND_PROBE_CLASS = "PersonalRadio";
@@ -45,7 +50,8 @@ class OZR_Const
     // чужі дані на першому ж старті -- що тут одного разу й сталося, поки
     // файл називався так. Нову річ називають новим іменем.
     static const string SETTINGS      = "$profile:OpenZone\\OZ_Radio_Settings.json";
-    static const int    SCHEMA_RADIO  = 1;
+    // 2 -- додано підсилення сплеску й голосу (SquelchGain, VoiceGain).
+    static const int    SCHEMA_RADIO  = 2;
 
     // Профілі ручних рацій: діапазон і крок на класнейм. Окремий файл, бо це
     // окреме рішення адміна -- канали КПК і те, куди дістає ручна рація, не
@@ -95,4 +101,5 @@ class OZR_Const
     static const string RPC_PROF_RES = "OZR_ProfRes";
     static const string RPC_TUNE     = "OZR_TuneReq";
     static const string RPC_PTT      = "OZR_PttRadio";
+    static const string RPC_AUDIO_RES = "OZR_AudioRes";
 }

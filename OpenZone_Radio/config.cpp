@@ -38,7 +38,13 @@ class CfgPatches
         {
             "DZ_Data",
             "DZ_Scripts",
-            "JM_CF_Scripts"
+            "JM_CF_Scripts",
+            // Ним оголошений personalradio_staticnoise_SoundShader, від якого
+            // успадковується наш сплеск. Без цього рядка базовий клас при
+            // бінаризації просто не знайдеться -- і не мовчки: конфіг не
+            // збереться. Це четверта ЖОРСТКА залежність, і вона нічого не
+            // коштує: pbo ванільний, він є на кожному сервері.
+            "DZ_Sounds_Effects"
         };
     };
 };
@@ -77,6 +83,41 @@ class CfgMods
                 files[] = {"OpenZone_Radio/scripts/5_Mission"};
             };
         };
+    };
+};
+
+// Звук сплеску -- ВЛАСНИЙ набір, хоч і на ванільному семплі.
+//
+// Ванільний personalradio_staticnoise_SoundShader має volume = 0.0501 і
+// range = 13, і це не помилка: він створений як ледь чутний фоновий шип
+// увімкненої рації, який не мусить заважати. Сплеск, який має бути ПОМІЧЕНИМ
+// -- і своїм власником, і тими, хто поруч, -- на цих числах не чути майже
+// зовсім (перевірено власником 2026-09-02: «слишком тихий»).
+//
+// Множити гучність зі скрипта було б лікуванням не того місця: рівень
+// заданий конфігом, там йому й мінятись. Успадковуємось від ванільного
+// шейдера, щоб не переписувати шлях до семпла -- він у грі вже є, і мод
+// однаково не везе жодного аудіофайла.
+//
+// Числа: гучність у сім разів вища за ванільну (близько +17 дБ) і вдвічі
+// більша чутність. Це рація в сусідній кімнаті, а не постріл.
+class CfgSoundShaders
+{
+    class personalradio_staticnoise_SoundShader;
+    class OZR_Squelch_SoundShader: personalradio_staticnoise_SoundShader
+    {
+        volume = 0.35;
+        range  = 25;
+    };
+};
+
+class CfgSoundSets
+{
+    class personalradio_staticnoise_SoundSet;
+    class OZR_Squelch_SoundSet: personalradio_staticnoise_SoundSet
+    {
+        soundShaders[] = {"OZR_Squelch_SoundShader"};
+        loop = 1;
     };
 };
 

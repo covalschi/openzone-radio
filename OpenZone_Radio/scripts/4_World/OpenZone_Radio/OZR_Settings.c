@@ -17,6 +17,15 @@ class OZR_Settings : OZR_ConfigBase
     // Та сама пастка, що вже ловила Step() і OZR_IsLive у цьому ж моді.
     bool DebugLog = false;
 
+    // Підсилення сплеску й голосу в рації. Одиниця -- ваніль недоторкана.
+    //
+    // Обидва живуть на СЕРВЕРІ, хоч і діють на клієнті: наскільки добре чути
+    // ефір -- це частина балансу рольового сервера, а не смак окремих вух.
+    // Регулятора радіо в налаштуваннях гри немає взагалі (див. OZR_Audio),
+    // тож без цих двох чисел гравцеві нічим зробити рацію гучнішою.
+    float SquelchGain = 1.0;
+    float VoiceGain   = 1.0;
+
     private static ref OZR_Settings s_Inst;
 
     static OZR_Settings Get()
@@ -33,6 +42,8 @@ class OZR_Settings : OZR_ConfigBase
     {
         Version = LatestVersion();
         DebugLog = false;
+        SquelchGain = 1.0;
+        VoiceGain   = 1.0;
     }
 
     static void ServerLoad()
