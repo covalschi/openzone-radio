@@ -374,6 +374,17 @@ modded class TransmitterBase
             return;
 
         mine.Write(m_OZR_Chosen);
+
+        // Ефір теж, і лише коли він тримається ЗАЩІПКОЮ.
+        //
+        // Утримання зберігати нічого: клавішу ніхто не тримає крізь
+        // перезапуск сервера, і рація, що повернулась би вести передачу через
+        // натиснуту вчора кнопку, -- це не відновлений стан, а вигаданий.
+        // Замок навпаки: його ставлять, щоб лишити, і підкинута відкрита
+        // рація мусить пережити рестарт, інакше «жучок» живе до першого
+        // планового перезапуску й ні для чого не годиться.
+        bool keptOpen = m_OZR_Air && m_OZR_Latched;
+        mine.Write(keptOpen);
     }
 
     override bool CF_OnStoreLoad(CF_ModStorageMap storage)
@@ -390,6 +401,24 @@ modded class TransmitterBase
         // вибере її рукою. Втрата тут -- один жест, а не рація.
         if (!mine.Read(m_OZR_Chosen))
             m_OZR_Chosen = false;
+
+        bool wasOpen = false;
+        if (!mine.Read(wasOpen))
+            wasOpen = false;
+
+        // ВІДКЛАДЕНО НА КАДР, і це не обережність, а порядок подій.
+        //
+        // Живлення відновлюється РАНІШЕ за наш блок: SwitchOn() робиться у
+        // ванільному EntityAI.OnStoreLoad, тобто всередині super, а CF читає
+        // мод-хранилище вже після нього. Отже OnWorkStart устигає закрити
+        // ефір (це наше ж правило: рація прокидається слухаючою) ще до того,
+        // як ми дізнаємось, що він був відкритий. Ставити біт тут означало б
+        // сперечатися з подією, яка вже відбулася.
+        //
+        // Нуль мілісекунд -- «наступний кадр»: предмет на той час зібраний
+        // цілком, з батареєю й енергоменеджером.
+        if (wasOpen)
+            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(OZR_RestoreAir, 0, false);
 
         return true;
     }
@@ -494,6 +523,33 @@ modded class TransmitterBase
         else
             said += "shut";
         OZR_Log.Dbg(said + ", broadcasting=" + IsBroadcasting().ToString());
+    }
+
+    // Повернути ефір, який пережив перезапуск.
+    //
+    // Тільки для защіпки -- інше сюди й не збережеться. Живлення питаємо
+    // заново: батарея могла сісти, поки сервер лежав, і відкритий передавач
+    // на мертвій коробці -- стан, якого не буває.
+    //
+    // m_OZR_Latched теж ставимо: без нього перше ж переміщення рації закрило
+    // б ефір за правилом «кинули на утриманні», тобто підкинутий жучок
+    // замовк би, щойно його хтось зрушив.
+    private void OZR_RestoreAir()
+    {
+        if (!GetGame() || !GetGame().IsServer())
+            return;
+
+        if (!OZR_IsPowered())
+        {
+            OZR_Log.Dbg("ptt gate: " + GetType() + " came back with a latched air but no power - left shut");
+            return;
+        }
+
+        m_OZR_Latched = true;
+        EnableBroadcast(true);
+        OZR_PublishAir(true);
+
+        OZR_Log.Info(GetType() + " came back still transmitting - the latch survived the restart");
     }
 
     // ------------------------------------------------------------- squelch
