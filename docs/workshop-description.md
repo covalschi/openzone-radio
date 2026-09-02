@@ -48,9 +48,16 @@ the radio is deleted. It measures rather than assumes.
 [b]Radio profiles.[/b] Bands, steps and limits in JSON: who may tune where, in what
 increments, between which bounds. Eleven ship as defaults.
 
-[b]Push-to-talk with a squelch.[/b] A short burst of static on key down and key up,
-played on the radio itself, so everyone near you hears it too — the set gives you away,
-it is not a noise in your headphones.
+[b]Push-to-talk with a real squelch.[/b] Two different clicks — one when you open the
+air, another when you let go — played on the radio itself, so everyone near you hears
+them too. The set gives you away; it is not a noise in your headphones. How far the
+click carries is a server setting, from 5 to 25 metres.
+
+[b]One key that speaks and transmits.[/b] The game's own voice key stays pure
+proximity. Your push-to-talk key does both at once — the people around you and the air
+— with one press, no holding two keys. The mod wires that itself by adding your key as
+an alternative binding on the voice input; your existing one is left alone, and the
+whole thing can be switched off from the server.
 
 [b]One radio speaks, not all of them.[/b] The one in your hands; with your hands empty,
 the one on a slot you held last. A radio in cargo never speaks — that one is a spare.
@@ -148,9 +155,16 @@ CC BY-NC-SA 4.0 plus the permissions above. Full text in the repository.
 [b]Профілі рацій.[/b] Смуги, кроки й межі в JSON: кому куди можна налаштуватись, з яким
 кроком і між якими межами. Одинадцять іде за умовчанням.
 
-[b]Push-to-talk зі squelch.[/b] Короткий сплеск статики на натисканні й відпусканні,
-який грає на самій рації — тож його чують і ті, хто поруч. Це рація видає вас, а не шум
-у ваших навушниках.
+[b]Push-to-talk зі справжнім squelch.[/b] Два різні клацання — одне коли відкриваєте
+ефір, інше коли відпускаєте, — грають на самій рації, тож їх чують і ті, хто поруч. Це
+рація видає вас, а не шум у ваших навушниках. Наскільки далеко чути клацання, вирішує
+сервер: від 5 до 25 метрів.
+
+[b]Одна клавіша говорить і передає.[/b] Власна клавіша голосу гри лишається чистим
+проксиміті. Ваша клавіша push-to-talk робить обидва одразу — і тим, хто поруч, і в
+ефір, — одним натисканням, без утримання двох. Мод сам це налаштовує, додаючи вашу
+клавішу другою прив'язкою до вводу голосу; наявну він не чіпає, а вимкнути це можна на
+сервері.
 
 [b]Говорить одна рація, а не всі.[/b] Та, що в руках; коли руки порожні — та на слоті,
 яку ви тримали останньою. Рація в карго не говорить ніколи: вона запасна.
