@@ -60,10 +60,16 @@ an alternative binding on the voice input; your existing one is left alone, and 
 whole thing can be switched off from the server.
 
 [b]One radio speaks, not all of them.[/b] The one in your hands; with your hands empty,
-the one on a slot you held last. A radio in cargo never speaks — that one is a spare.
+the one on a slot you held last; a set in cargo only when there is neither, and the
+server can forbid that outright. The whole chain down to you counts: a radio on a vest
+that lies in your backpack is a cargo radio.
 
 [b]A frequency keypad.[/b] Type a frequency instead of pressing "next channel" until
 you arrive.
+
+[b]Loot is the server's call.[/b] A types.xml with all ten sets ships in the mod folder,
+every nominal at zero: nothing spawns until the owner says so. Lifetime on the ground is
+24 hours, so a radio left somewhere on purpose survives a day of play.
 
 [h1]Requirements[/h1]
 
@@ -167,10 +173,16 @@ CC BY-NC-SA 4.0 plus the permissions above. Full text in the repository.
 сервері.
 
 [b]Говорить одна рація, а не всі.[/b] Та, що в руках; коли руки порожні — та на слоті,
-яку ви тримали останньою. Рація в карго не говорить ніколи: вона запасна.
+яку ви тримали останньою; комплект у карго — лише коли немає ні тієї, ні тієї, і сервер
+може заборонити це зовсім. Важить увесь ланцюжок до вас: рація на жилеті, що лежить у
+рюкзаку, — це рація в карго.
 
 [b]Клавіатура частоти.[/b] Набрати частоту, а не тиснути «наступний канал», поки не
 дійдеш.
+
+[b]Лут вирішує сервер.[/b] У теці мода лежить types.xml з усіма десятьма комплектами, усі
+nominal нульові: нічого не спавниться, доки власник не скаже. Час життя на землі — доба,
+тож рація, залишена десь навмисне, переживає день гри.
 
 [h1]Вимоги[/h1]
 

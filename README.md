@@ -32,8 +32,10 @@ on the radio itself, so everyone near you hears it too — it is the set giving 
 not a noise in your headphones.
 
 **One radio speaks, not all of them.** The one in your hands; with your hands empty, the
-one on a slot that you held last. A radio in cargo never speaks — that one is a spare.
-Carry three sets on three frequencies and the key still opens exactly one.
+one on a slot that you held last; only when there is neither, one lying in cargo — and the
+server may rule cargo out altogether (`PttFromCargo`). What counts is the whole chain down
+to you, not the last link: a set on the slot of a vest that lies in your backpack is a
+cargo radio. Carry three sets on three frequencies and the key still opens exactly one.
 
 **A frequency keypad.** Type a frequency instead of pressing "next channel" until you
 arrive.
@@ -187,6 +189,20 @@ live client: the engine accepted the value and read it back unchanged, and nothi
 about the voice got louder. The channel exists, the number is stored, and it does
 not reach what comes out of a radio. A knob that promises what it cannot do is
 worse than no knob, so it was removed.
+
+### Loot and lifetime: the economy has to be told
+
+The ten radio classes exist only in `config.cpp`. DayZ's central economy spawns nothing it
+has not been told about, and it cleans up a dropped item of an unknown type by rules you did
+not pick. Both live in `types.xml`, so the mod folder ships an example — `types.xml` next
+to `mod.cpp` — with all ten sets.
+
+Everything in it is **opt-in**: `nominal` and `min` are 0, so nothing spawns until you say
+so. Copy the entries you want into your mission's `db/types.xml` (or add the file through
+`cfgeconomycore.xml`) and set the numbers for your server.
+
+`lifetime` is **86400** — 24 hours, three times the vanilla `PersonalRadio`. A radio left
+somewhere on purpose, with the latch on, has to outlive a day of play or it is not a tool.
 
 ## When the frequencies look absurd
 
