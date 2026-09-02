@@ -39,16 +39,36 @@ class OZ_Module_Radio extends TransmitterBase
         SwitchOn(on);
         EnableReceive(on);
 
+        // Знеструмлений КПК закриває рот тим самим шляхом, що й клавіша: так
+        // синхрозмінна ефіру й защіпка гаснуть разом із рушійним бітом.
         if (!on)
+        {
+            if (m_Speaking)
+                OZR_SetSpeaking(false, false);
             m_Speaking = false;
+            EnableBroadcast(false);
+            return;
+        }
 
-        EnableBroadcast(on && m_Speaking);
+        EnableBroadcast(m_Speaking);
+
+        // Рядок лише поки говорять: саме цей тик до D96 закривав ефір мовчки.
+        if (m_Speaking)
+            OZR_Log.Dbg("board: power tick while speaking - air kept open, broadcasting=" + IsBroadcasting().ToString());
     }
 
-    void OZR_Speak(bool on)
+    // ЄДИНИЙ вхід для «говорити» -- той самий, що в ручної рації (D96).
+    //
+    // Раніше PTT ішов через OZR_SetSpeaking модованого TransmitterBase і
+    // m_Speaking не торкався, а звірка живлення КПК раз на дві секунди кликала
+    // OZR_Wake, який ставив EnableBroadcast(on && m_Speaking) -- тобто
+    // закривав ефір посеред фрази. Плата замовкала через дві секунди
+    // утримання, і жодного рядка про це ніде не було.
+    override bool OZR_SetSpeaking(bool on, bool locked)
     {
-        m_Speaking = on;
-        EnableBroadcast(on);
+        bool did = super.OZR_SetSpeaking(on, locked);
+        m_Speaking = did && on;
+        return did;
     }
 
     bool OZR_IsLive()

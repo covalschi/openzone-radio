@@ -148,6 +148,11 @@ class OZR_Ptt
 
     private static void Pressed()
     {
+        // Без ефіру клавіша була інертною й мовчазною (ТЗ-5 R-E3.1). Раз на
+        // натиснення, не на кадр: натиснення -- свідома дія.
+        if (!OZR_ClientGrid.Ready())
+            OZR_Say.Toast("STR_OZR_NOT_INIT");
+
         int now = GetGame().GetTime();
 
         // Замок стоїть -- будь-яке натиснення його знімає, і подвійним воно

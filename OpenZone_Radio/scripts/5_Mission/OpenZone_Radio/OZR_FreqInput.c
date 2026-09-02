@@ -120,6 +120,10 @@ class OZR_FreqInput
         if (why != "")
         {
             OZR_Log.Info("freq keypad: not opening - " + why);
+            // Ефіру немає -- гравець бачить це на екрані (ТЗ-5 R-E3.1), а не
+            // лише в лозі, який ретейл-клієнт і не пише.
+            if (!OZR_ClientGrid.Ready())
+                OZR_Say.Toast("STR_OZR_NOT_INIT");
             return;
         }
 

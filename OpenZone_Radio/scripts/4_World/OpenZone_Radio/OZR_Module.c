@@ -58,6 +58,7 @@ class OZR_Module : CF_ModuleWorld
             GetRPCManager().AddRPC(OZR_Const.MOD, OZR_Const.RPC_GRID_RES, this, SingleplayerExecutionType.Client);
             GetRPCManager().AddRPC(OZR_Const.MOD, OZR_Const.RPC_PROF_RES, this, SingleplayerExecutionType.Client);
             GetRPCManager().AddRPC(OZR_Const.MOD, OZR_Const.RPC_AUDIO_RES, this, SingleplayerExecutionType.Client);
+            GetRPCManager().AddRPC(OZR_Const.MOD, OZR_Const.RPC_TUNE_RES, this, SingleplayerExecutionType.Client);
 
             m_PullsLeft = PULL_TRIES;
             m_PullTimer = new Timer(CALL_CATEGORY_SYSTEM);
@@ -253,19 +254,24 @@ class OZR_Module : CF_ModuleWorld
         if (!radio)
         {
             OZR_Log.Dbg("tune refused: nothing that transmits in hands");
+            OZR_TuneRefused(sender, "STR_OZR_ERR_NO_RADIO_HANDS");
             return;
         }
 
         if (!radio.OZR_IsPowered())
         {
             OZR_Log.Dbg("tune refused: the radio is switched off");
+            OZR_TuneRefused(sender, "STR_OZR_ERR_SWITCHED_OFF");
             return;
         }
 
         OZR_RadioProfile prof = OZR_Profiles.For(radio.GetType());
         if (!prof || !OZR_Grid.Ready())
         {
-            OZR_Log.Dbg("tune refused: no profile for " + radio.GetType() + " or the grid is not even");
+            // Info, не Dbg (ТЗ-5 R-E3.2): без цього рядка адмін не відрізнить
+            // «сітка не виведена» від «клієнт не отримав».
+            OZR_Log.Info("tune refused for " + sender.GetName() + ": no profile for " + radio.GetType() + " or the grid is not even");
+            OZR_TuneRefused(sender, "STR_OZR_NOT_INIT");
             return;
         }
 
@@ -276,12 +282,14 @@ class OZR_Module : CF_ModuleWorld
         if (!OZR_Grid.Window(prof, lo, hi, stride))
         {
             OZR_Log.Dbg("tune refused: " + radio.GetType() + " does not overlap the running ether at all - restart the server");
+            OZR_TuneRefused(sender, "STR_OZR_ERR_NO_OVERLAP");
             return;
         }
 
         if (want < lo || want > hi)
         {
             OZR_Log.Dbg("tune refused: index " + want.ToString() + " is outside " + lo.ToString() + ".." + hi.ToString());
+            OZR_TuneRefused(sender, "STR_OZR_KEYPAD_OUT");
             return;
         }
 
@@ -290,6 +298,7 @@ class OZR_Module : CF_ModuleWorld
         if (((want - lo) % stride) != 0)
         {
             OZR_Log.Dbg("tune refused: index " + want.ToString() + " is between this set's own channels");
+            OZR_TuneRefused(sender, "STR_OZR_ERR_OFF_STEP_SET");
             return;
         }
 
@@ -448,6 +457,26 @@ class OZR_Module : CF_ModuleWorld
         }
 
         return best;
+    }
+
+    // Відмова на настройку -- гравцеві, ключем (D103). Лише відмови: удачу
+    // видно на самій рації, коли приїде синхрозмінна.
+    private void OZR_TuneRefused(PlayerIdentity to, string key)
+    {
+        if (!to || key == "")
+            return;
+        GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_TUNE_RES, new Param1<string>(key), true, to);
+    }
+
+    void OZR_TuneRes(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        if (type != CallType.Client)
+            return;
+        Param1<string> p = new Param1<string>("");
+        if (!ctx.Read(p))
+            return;
+        OZR_Log.Info("tune refused by the server: " + p.param1);
+        OZR_Say.Toast(p.param1);
     }
 
     void OZR_GridRes(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)

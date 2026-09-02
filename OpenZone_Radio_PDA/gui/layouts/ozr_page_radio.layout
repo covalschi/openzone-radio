@@ -458,6 +458,135 @@ FrameWidgetClass OZ_PageRadio {
     }
    }
   }
+  ButtonWidgetClass BtnChipA {
+   visible 1
+   position 560 346
+   size 145 34
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   priority 2
+   {
+    PanelWidgetClass BtnChipABg {
+     visible 1
+     position 0 0
+     size 145 34
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     ignorepointer 1
+     color 0.2 0.35 0.24 1
+     priority 3
+     style rover_sim_colorable
+    }
+    TextWidgetClass BtnChipAText {
+     visible 1
+     position 0 6
+     size 145 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     ignorepointer 1
+     text ""
+     font "gui/fonts/sdf_MetronBook24"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     color 0.788 0.788 0.816 1
+     priority 4
+    }
+   }
+  }
+  ButtonWidgetClass BtnChipB {
+   visible 1
+   position 715 346
+   size 145 34
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   priority 2
+   {
+    PanelWidgetClass BtnChipBBg {
+     visible 1
+     position 0 0
+     size 145 34
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     ignorepointer 1
+     color 0.2 0.35 0.24 1
+     priority 3
+     style rover_sim_colorable
+    }
+    TextWidgetClass BtnChipBText {
+     visible 1
+     position 0 6
+     size 145 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     ignorepointer 1
+     text ""
+     font "gui/fonts/sdf_MetronBook24"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     color 0.788 0.788 0.816 1
+     priority 4
+    }
+   }
+  }
+  ButtonWidgetClass BtnChipC {
+   visible 1
+   position 870 346
+   size 145 34
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   priority 2
+   {
+    PanelWidgetClass BtnChipCBg {
+     visible 1
+     position 0 0
+     size 145 34
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     ignorepointer 1
+     color 0.2 0.35 0.24 1
+     priority 3
+     style rover_sim_colorable
+    }
+    TextWidgetClass BtnChipCText {
+     visible 1
+     position 0 6
+     size 145 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     ignorepointer 1
+     text ""
+     font "gui/fonts/sdf_MetronBook24"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     color 0.788 0.788 0.816 1
+     priority 4
+    }
+   }
+  }
   TextWidgetClass HintText {
    visible 1
    position 560 306

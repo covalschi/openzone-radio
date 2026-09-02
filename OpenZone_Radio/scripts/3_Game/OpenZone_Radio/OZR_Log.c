@@ -53,3 +53,15 @@ class OZR_Log
         Print(OZR_Const.LOG_PREFIX + "dbg: " + msg);
     }
 }
+
+// Слово гравцеві на екран -- ванільний тост. Для того, що інакше жило б лише
+// в лозі: відмова сервера на настройку (D103) і «ефіру немає» (ТЗ-5 R-E3).
+class OZR_Say
+{
+    static void Toast(string key)
+    {
+        if (!GetGame() || GetGame().IsDedicatedServer() || key == "")
+            return;
+        NotificationSystem.AddNotificationExtended(4, "#STR_OZR_TOAST_TITLE", "#" + key, "");
+    }
+}

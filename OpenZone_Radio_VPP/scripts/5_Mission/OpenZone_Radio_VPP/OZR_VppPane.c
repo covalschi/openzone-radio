@@ -40,6 +40,10 @@ modded class OZ_VppAdminMenu
 {
     private ref OZR_Profiles m_RadCfg;
     private int  m_RadPicked   = -1;
+    // Рядок, на який хочуть перейти з незбереженими правками (D106): перший
+    // клік попереджає, другий по тому ж рядку -- відкидає правки.
+    private int  m_RadSwitchTo = -1;
+    private bool m_RadNewArmed = false;
     private bool m_RadDelArmed = false;
 
     // Перемальовування списку кличе SelectRow, а рушiй вiдповiдає на нього
@@ -275,12 +279,48 @@ modded class OZ_VppAdminMenu
         m_RadRepaint = false;
     }
 
+    // Чи розійшлись поля з тим, що лежить у моделі для вибраного рядка.
+    private bool Dirty()
+    {
+        if (!m_RadCfg || !m_RadCfg.Radios)
+            return false;
+        if (m_RadPicked < 0 || m_RadPicked >= m_RadCfg.Radios.Count())
+            return false;
+
+        OZR_RadioProfile p = m_RadCfg.Radios[m_RadPicked];
+        if (GetEdit("RadF_Class") != p.ClassName)
+            return true;
+        if (GetEdit("RadF_Min") != OZR_Fmt.MHz(p.MinMHz))
+            return true;
+        if (GetEdit("RadF_Max") != OZR_Fmt.MHz(p.MaxMHz))
+            return true;
+        if (GetEdit("RadF_Step") != OZR_Fmt.Step(p.StepMHz))
+            return true;
+        return false;
+    }
+
     private void PickRad(int row)
     {
         if (!m_RadCfg || !m_RadCfg.Radios)
             return;
         if (row < 0 || row >= m_RadCfg.Radios.Count())
             return;
+
+        // Незбережені правки не губляться мовчки (D106): перший клік по
+        // іншому рядку попереджає й лишає виділення де було, другий по тому
+        // ж рядку -- відкидає правки.
+        if (row != m_RadPicked && Dirty())
+        {
+            if (m_RadSwitchTo != row)
+            {
+                m_RadSwitchTo = row;
+                RebuildRadList();
+                Hint("unsaved edits on " + m_RadCfg.Radios[m_RadPicked].ClassName + " - pick the row again to discard them, or SAVE ALL first");
+                return;
+            }
+        }
+        m_RadSwitchTo = -1;
+        m_RadNewArmed = false;
 
         m_RadPicked   = row;
         m_RadDelArmed = false;
@@ -436,6 +476,18 @@ modded class OZ_VppAdminMenu
             Hint("nothing loaded yet");
             return;
         }
+
+        // NEW -- теж зміна профілю: незбережену правку він мовчки викидав
+        // (зміряно на стенді 2026-09-02, D106). Той самий захист, що й у
+        // вибору рядка: спершу назвати, другим натисканням -- викинути.
+        if (Dirty() && !m_RadNewArmed)
+        {
+            m_RadNewArmed = true;
+            Hint("unsaved edits on " + m_RadCfg.Radios[m_RadPicked].ClassName + " - press NEW again to discard them, or SAVE ALL first");
+            return;
+        }
+        m_RadNewArmed = false;
+
         if (!m_RadCfg.Radios)
             m_RadCfg.Radios = new array<ref OZR_RadioProfile>();
 
@@ -501,22 +553,29 @@ modded class OZ_VppAdminMenu
                 return;
             }
 
-            OZR_RadioProfile p = m_RadCfg.Radios[m_RadPicked];
-            p.ClassName = cls;
-            p.MinMHz    = GetEdit("RadF_Min").ToFloat();
-            p.MaxMHz    = GetEdit("RadF_Max").ToFloat();
-            p.StepMHz   = GetEdit("RadF_Step").ToFloat();
+            // ПЕРЕВІРКА -- ДО МОДЕЛІ (D106): раніше числа лягали в об'єкт, а
+            // потім відмовлялись, і зіпсований рядок лишався в пам'яті --
+            // наступний SAVE ALL писав його мовчки.
+            float lo   = GetEdit("RadF_Min").ToFloat();
+            float hi   = GetEdit("RadF_Max").ToFloat();
+            float step = GetEdit("RadF_Step").ToFloat();
 
-            if (p.MaxMHz <= p.MinMHz)
+            if (hi <= lo)
             {
                 Hint("the upper bound must be above the lower one");
                 return;
             }
-            if (p.StepMHz <= 0)
+            if (step <= 0)
             {
                 Hint("the step must be above zero");
                 return;
             }
+
+            OZR_RadioProfile p = m_RadCfg.Radios[m_RadPicked];
+            p.ClassName = cls;
+            p.MinMHz    = lo;
+            p.MaxMHz    = hi;
+            p.StepMHz   = step;
         }
 
         string body;

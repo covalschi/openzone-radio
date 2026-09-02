@@ -32,6 +32,17 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
         if (op == "forget")
             return Forget(json, sender, ok, error);
 
+        // Носій: чотири дієслова роду oz_radio_frequencies (ТЗ-5 R-E5.4),
+        // ТУТ, а не в ядрі (R-E5.5): КПК про частоти не знає нічого.
+        if (op == "chip_read")
+            return ChipRead(sender, ok, error);
+        if (op == "chip_write")
+            return ChipWrite(sender, ok, error);
+        if (op == "chip_import")
+            return ChipImport(sender, ok, error);
+        if (op == "chip_take")
+            return ChipTake(json, sender, ok, error);
+
         return "";
     }
 
@@ -84,8 +95,12 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
         // Місце в пам'яті приладу -- ЗАВЖДИ: за цим числом клієнт розуміє,
         // що книжку час перечитати. Самих рядків тут немає, бо книжка їде
         // своєю операцією: вона міняється рідко, а стан перепитують часто.
-        st.HasMemory = true;
-        st.FreeCells = pda.OZ_RoomFor(OZRP_Const.KIND_FREQS);
+        // Три відповіді про пам'ять (ТЗ-5 R-E5.2): прилад не зберігає записів
+        // узагалі (Limits.Memory == 0), пам'ять заповнена, місце є. Вільних
+        // -- саме ВІЛЬНИХ, без тих, що книжка вже тримає: OZ_RoomFor рахує
+        // «вільні плюс свої», і лічильник показував місце, якого нема (D102).
+        st.StoresRecords = pda.OZ_Max() > 0;
+        st.FreeCells     = pda.OZ_Free();
 
         return Body(st, ok, error);
     }
@@ -104,11 +119,20 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
             return "";
         }
 
-        OZ_Module_Radio board = OZR_Set.BoardIn(pda);
+        OZR_FreqBook book = new OZR_FreqBook();
+        Read(pda, book);
 
-        // Доступність рахуємо проти профілю тієї плати, яка справді стоїть:
-        // частота, записана з п'ятикілометрової, у смугу двохсотметрової не
-        // влазить, і сказати про це треба до натискання.
+        OZR_BookList list = new OZR_BookList();
+        Fill(list, book, OZR_Set.BoardIn(pda));
+        return Rows(list, ok, error);
+    }
+
+    // Рядки списку з книжки -- приладу чи чипа, однаково. Доступність
+    // рахуємо проти профілю тієї плати, яка справді стоїть: частота,
+    // записана з п'ятикілометрової, у смугу двохсотметрової не влазить, і
+    // сказати про це треба до натискання.
+    private void Fill(OZR_BookList list, OZR_FreqBook book, OZ_Module_Radio board)
+    {
         int lo;
         int hi;
         int stride;
@@ -120,43 +144,18 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
         if (bp)
             window = OZR_Grid.Window(bp, lo, hi, stride);
 
-        OZR_BookList list = new OZR_BookList();
+        // Ready() -- ОДИН РАЗ, поза циклом (D14): усередині це прохід по всій
+        // таблиці рушія, близько 10 500 переходів на кожен рядок книжки.
+        bool gridOk = OZR_Grid.Ready();
 
-        OZR_FreqBook book = new OZR_FreqBook();
-        Read(pda, book);
         // РІШЕННЯ ПРО ДОСЯЖНІСТЬ РАХУЄТЬСЯ В ЛОКАЛЬНУ ЗМІННУ, А НЕ ПРЯМО В
         // ПОЛЕ. Це не стиль -- це обхід рушійної вади, знайденої діленням
-        // навпіл 2026-09-01.
-        //
-        // Ось цей рядок -- і саме він один -- валив сервер нативно:
-        //
-        //     row.Reach = window && e.Index >= lo && e.Index <= hi;
-        //
-        // Ланцюжок «&&» із трьох членів, присвоєний БЕЗПОСЕРЕДНЬО в поле
-        // об'єкта на купі, псує купу. Далі сервер помирає на першій-ліпшій
-        // наступній роботі з нею: то 0xC0000005 за адресою 0x24 всередині
-        // ntdll (заголовок блоку не пройшов свою контрольну суму), то
-        // 0xC0000374 (STATUS_HEAP_CORRUPTION) у RtlFreeHeap. Місце падіння
-        // щоразу інше -- Print() логера, MakeData, ErrorModuleHandler, --
-        // бо псується пам'ять, а спотикається наступний.
-        //
-        // Вимірювання, покроково, на детермінованому повторі (одне
-        // натискання SAVE вбивало сервер за секунду):
-        //   цикл вимкнено                      -- живе
-        //   цикл є, рядок Reach вимкнено       -- живе
-        //   + row.Name / row.Index             -- живе
-        //   + OZR_Grid.Ready() / MHzAt         -- живе
-        //   + list.Items.Insert(row)           -- живе
-        //   + сам лише рядок Reach вище        -- ПАДАЄ
-        //
-        // Той самий 63-байтний документ їде цілим, поки Reach лишається
-        // значенням за замовчуванням, тож ні форма типу, ні серіалізація, ні
-        // RPC до цього стосунку не мають.
-        //
-        // Родич цієї вади вже виміряний у цьому ж проєкті 2026-08-30: парсер
-        // Enforce ламався на багаторядковій умові з хвостовим «||»
-        // (OZF_Module.OZ_RoleReq). Правило одне: складену логіку рахуємо в
-        // локальну змінну й у поле кладемо вже готове значення.
+        // навпіл 2026-09-01: ланцюжок «&&» із трьох членів, присвоєний
+        // безпосередньо в поле об'єкта на купі, псує купу, і сервер помирає
+        // на першій-ліпшій наступній роботі з нею (0xC0000005 у ntdll,
+        // STATUS_HEAP_CORRUPTION у RtlFreeHeap -- місце щоразу інше).
+        // Правило одне: складену логіку рахуємо в локальну змінну й у поле
+        // кладемо вже готове значення.
         for (int b = 0; b < book.Items.Count(); b++)
         {
             OZR_FreqEntry e = book.Items[b];
@@ -164,7 +163,7 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
             OZR_BookRow row = new OZR_BookRow();
             row.Name  = e.Name;
             row.Index = e.Index;
-            if (OZR_Grid.Ready())
+            if (gridOk)
                 row.MHz = OZR_Grid.MHzAt(e.Index);
 
             bool reach = false;
@@ -180,7 +179,10 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
 
             list.Items.Insert(row);
         }
+    }
 
+    private string Rows(OZR_BookList list, out bool ok, out string error)
+    {
         string body;
         string err;
         if (!JsonFileLoader<OZR_BookList>.MakeData(list, body, err, false))
@@ -345,9 +347,13 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
     {
         if (!book || !pda)
             return;
+        Parse(pda.OZ_KindRead(OZRP_Const.KIND_FREQS), book);
+    }
 
-        string payload = pda.OZ_KindRead(OZRP_Const.KIND_FREQS);
-        if (payload == "")
+    // Той самий формат і на чипі: рід один, читач один.
+    private void Parse(string payload, OZR_FreqBook book)
+    {
+        if (!book || payload == "")
             return;
 
         array<string> lines = new array<string>();
@@ -370,7 +376,7 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
         }
     }
 
-    private bool Store(OZ_PDA_Base pda, OZR_FreqBook book, out string error)
+    private string Payload(OZR_FreqBook book)
     {
         string payload = "";
         for (int i = 0; i < book.Items.Count(); i++)
@@ -380,6 +386,12 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
                 payload += BOOK_SEP;
             payload += e.Index.ToString() + " " + e.Name;
         }
+        return payload;
+    }
+
+    private bool Store(OZ_PDA_Base pda, OZR_FreqBook book, out string error)
+    {
+        string payload = Payload(book);
 
         // ОДНА ЯЧЕЙКА НА ЧАСТОТУ, і пише це в ПАМ'ЯТЬ ПРИЛАДУ, а не на носій.
         // Прилад сам відмовить, якщо ячеек не лишилось.
@@ -491,5 +503,237 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
         ok = true;
         error = "";
         return "";
+    }
+
+    // ------------------------------------------------------------- носій
+    //
+    // Дім книжки -- ПРИЛАД (ТЗ-5 R-E5.1); чип -- спосіб її винести. Чотири
+    // дієслова ті самі, що в міток і записок (R-E5.4), з тими самими правилами
+    // (R-E5.6): забрати -- значить скопіювати, чип не порожніє; читається й
+    // замкнений на запис чип, запис потребує Writable; місткість чипа
+    // рахується за родами, перезапис свого роду не рахується двічі.
+
+    // Книжка чипа -- тим самим списком, що й книжка приладу.
+    private string ChipRead(PlayerIdentity sender, out bool ok, out string error)
+    {
+        ok = false;
+
+        OZ_DataCarrier_Base c = OZ_CarrierOps.Resolve(sender, error);
+        if (!c)
+            return "";
+
+        OZR_FreqBook book = new OZR_FreqBook();
+        Parse(c.OZ_Read(OZRP_Const.KIND_FREQS), book);
+        if (book.Items.Count() == 0)
+        {
+            error = "STR_OZR_ERR_CHIP_EMPTY";
+            return "";
+        }
+
+        OZ_Module_Radio board = null;
+        OZ_PDA_Base pda = OZ_PdaLookup.HeldBy(sender);
+        if (pda)
+            board = OZR_Set.BoardIn(pda);
+
+        OZR_BookList list = new OZR_BookList();
+        Fill(list, book, board);
+        return Rows(list, ok, error);
+    }
+
+    // Книжку приладу -- на чип. Скільки влізе; решта лишається в приладі,
+    // і звіт це каже.
+    private string ChipWrite(PlayerIdentity sender, out bool ok, out string error)
+    {
+        ok = false;
+
+        OZ_DataCarrier_Base c = OZ_CarrierOps.ResolveWritable(sender, error);
+        if (!c)
+            return "";
+
+        OZ_PDA_Base pda = OZ_PdaLookup.HeldBy(sender);
+        if (!pda)
+        {
+            error = "STR_OZ_ERR_NO_DEVICE";
+            return "";
+        }
+
+        OZR_FreqBook book = new OZR_FreqBook();
+        Read(pda, book);
+        int total = book.Items.Count();
+        if (total == 0)
+        {
+            error = "STR_OZR_ERR_BOOK_EMPTY";
+            return "";
+        }
+
+        int room = c.OZ_RoomFor(OZRP_Const.KIND_FREQS);
+        if (room <= 0)
+        {
+            error = "STR_OZ_ERR_CARRIER_FULL";
+            return "";
+        }
+        if (total > room)
+            book.Items.Resize(room);
+
+        if (!c.OZ_Write(OZRP_Const.KIND_FREQS, Payload(book), book.Items.Count()))
+        {
+            error = "STR_OZ_ERR_CARRIER_FULL";
+            return "";
+        }
+
+        return Report(book.Items.Count(), total, ok, error);
+    }
+
+    // Усе з чипа -- у прилад. Капсула (заморожений прилад) не приймає нічого
+    // нового -- те саме правило, що в міток і записок.
+    private string ChipImport(PlayerIdentity sender, out bool ok, out string error)
+    {
+        ok = false;
+
+        OZ_DataCarrier_Base c = OZ_CarrierOps.Resolve(sender, error);
+        if (!c)
+            return "";
+
+        OZ_PDA_Base pda = OZ_PdaLookup.HeldBy(sender);
+        if (!pda)
+        {
+            error = "STR_OZ_ERR_NO_DEVICE";
+            return "";
+        }
+        if (OZ_PdaCapsule.IsFrozen(pda))
+        {
+            error = "STR_OZ_ERR_FROZEN";
+            return "";
+        }
+
+        OZR_FreqBook chip = new OZR_FreqBook();
+        Parse(c.OZ_Read(OZRP_Const.KIND_FREQS), chip);
+        if (chip.Items.Count() == 0)
+        {
+            error = "STR_OZR_ERR_CHIP_EMPTY";
+            return "";
+        }
+
+        return Merge(pda, chip, ok, error);
+    }
+
+    // Одну частоту з чипа -- у прилад. Індекс -- рядок списку чипа, який
+    // клієнт щойно отримав тим самим chip_read.
+    private string ChipTake(string json, PlayerIdentity sender, out bool ok, out string error)
+    {
+        ok = false;
+
+        OZR_TuneRef r;
+        string err;
+        if (!JsonFileLoader<OZR_TuneRef>.LoadData(json, r, err) || !r || r.Index < 0)
+        {
+            error = "STR_OZ_ERR_INTERNAL";
+            return "";
+        }
+
+        OZ_DataCarrier_Base c = OZ_CarrierOps.Resolve(sender, error);
+        if (!c)
+            return "";
+
+        OZ_PDA_Base pda = OZ_PdaLookup.HeldBy(sender);
+        if (!pda)
+        {
+            error = "STR_OZ_ERR_NO_DEVICE";
+            return "";
+        }
+        if (OZ_PdaCapsule.IsFrozen(pda))
+        {
+            error = "STR_OZ_ERR_FROZEN";
+            return "";
+        }
+
+        OZR_FreqBook chip = new OZR_FreqBook();
+        Parse(c.OZ_Read(OZRP_Const.KIND_FREQS), chip);
+        if (r.Index >= chip.Items.Count())
+        {
+            error = "STR_OZR_ERR_PICK_ONE";
+            return "";
+        }
+
+        OZR_FreqBook one = new OZR_FreqBook();
+        one.Items.Insert(chip.Items[r.Index]);
+        return Merge(pda, one, ok, error);
+    }
+
+    // Злиття в книжку приладу: те саме ім'я -- переписати (книжка -- не
+    // журнал), нове -- дописати, поки є місце. Що не влізло, лишилось на чипі.
+    private string Merge(OZ_PDA_Base pda, OZR_FreqBook incoming, out bool ok, out string error)
+    {
+        ok = false;
+
+        OZR_FreqBook book = new OZR_FreqBook();
+        Read(pda, book);
+
+        int room  = pda.OZ_RoomFor(OZRP_Const.KIND_FREQS);
+        int taken = 0;
+
+        for (int i = 0; i < incoming.Items.Count(); i++)
+        {
+            OZR_FreqEntry e = incoming.Items[i];
+            if (!e || e.Name == "")
+                continue;
+
+            int at = -1;
+            for (int j = 0; j < book.Items.Count(); j++)
+            {
+                if (book.Items[j].Name == e.Name)
+                {
+                    at = j;
+                    break;
+                }
+            }
+
+            OZR_FreqEntry copy = new OZR_FreqEntry();
+            copy.Name  = e.Name;
+            copy.Index = e.Index;
+
+            if (at >= 0)
+            {
+                book.Items.Set(at, copy);
+                taken++;
+                continue;
+            }
+
+            if (book.Items.Count() >= room)
+                continue;
+
+            book.Items.Insert(copy);
+            taken++;
+        }
+
+        if (taken == 0)
+        {
+            error = "STR_OZ_ERR_PDA_FULL";
+            return "";
+        }
+
+        if (!Store(pda, book, error))
+            return "";
+
+        return Report(taken, incoming.Items.Count(), ok, error);
+    }
+
+    private string Report(int taken, int total, out bool ok, out string error)
+    {
+        OZR_ChipReport rep = new OZR_ChipReport();
+        rep.Taken = taken;
+        rep.Total = total;
+
+        string body;
+        string err;
+        if (!JsonFileLoader<OZR_ChipReport>.MakeData(rep, body, err, false))
+        {
+            error = "STR_OZ_ERR_INTERNAL";
+            return "";
+        }
+
+        ok = true;
+        error = "";
+        return body;
     }
 }

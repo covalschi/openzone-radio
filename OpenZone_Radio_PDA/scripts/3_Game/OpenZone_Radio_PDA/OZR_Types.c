@@ -49,8 +49,8 @@ class OZR_RadioState
     float EtherStep = 0;
 
     // Книжка частот із носія. Порожньо буває з двох різних причин -- носія
-    // немає або він порожній, -- і сторінка розрізняє їх за HasMemory.
-    bool  HasMemory = false;
+    // немає або він порожній, -- і сторінка розрізняє їх за StoresRecords.
+    bool  StoresRecords = false;
     int   FreeCells  = -1;
 }
 
@@ -74,4 +74,11 @@ class OZR_TuneRef
 class OZR_ListReq
 {
     bool Book = false;
+}
+// Звіт носія: скільки взято/записано з того, що було (R-E5.4). Менше за
+// Total -- решта не влізла й лишилась там, де була.
+class OZR_ChipReport
+{
+    int Taken = 0;
+    int Total = 0;
 }
