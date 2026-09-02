@@ -142,28 +142,34 @@ The native library reads it once, at process start, because that is when the pat
 applied: a change takes effect on the **next** server start, and the library says so in
 its log rather than leaving the delay to be discovered.
 
-### How loud the air is
+### How loud the squelch is, and how far it carries
 
-`OZ_Radio_Settings.json` carries two multipliers, both `1.0` by default, both applied
-on the client and decided by the server — on a roleplay server how well the air carries
-is part of the balance rather than a matter of taste.
+`OZ_Radio_Settings.json`:
 
-| Setting | What it multiplies |
+| Setting | What it does |
 |---|---|
-| `SquelchGain` | The burst of static on key down and key up |
-| `VoiceGain` | Voice coming out of a radio |
+| `SquelchGain` | Multiplies the burst of static. `1.0` is the level set in `config.cpp` |
+| `SquelchRange` | How far it is heard, in metres |
 
-**`VoiceGain` is the only way to change radio loudness at all.** DayZ's sound options
-have five sliders — master, effects, music, VoIP output, VoIP threshold — and none of
-them is radio; the engine has a radio channel, but nothing in the game exposes it. A
-player who finds the air too quiet has no setting to reach for, so this one stands in
-for it.
+`SquelchRange` moves in **steps** — 5, 10, 15, 20, 25 — and the nearest one is
+taken; ask for 13 and you get 15, and the log says so rather than leaving you to
+wonder. The steps exist because DayZ's two sound APIs each withhold one dial:
+sound sets let a mod change volume at runtime but fix the radius in config, while
+`Object.PlaySound` takes a radius as an argument and offers no volume at all.
+Keeping the sets means keeping the sound; the radius then comes from picking
+among prepared ones.
 
-Both are read when the server starts and travel to each client on connect, so a change
-needs a server restart.
+Both are read when the server starts and travel to each client on connect, so a
+change needs a server restart.
 
-The squelch's own level is set in `config.cpp`, not here: this multiplier is for
-tuning on a running server without a rebuild.
+**There is no setting for the loudness of the voice itself, and that is a finding
+rather than an omission.** The engine has a radio mixer channel, and DayZ's sound
+options do not expose it — five sliders, none of them radio. The one script handle,
+`SoundScene.SetRadioVolume`, was tried with a multiplier of ten and measured on a
+live client: the engine accepted the value and read it back unchanged, and nothing
+about the voice got louder. The channel exists, the number is stored, and it does
+not reach what comes out of a radio. A knob that promises what it cannot do is
+worse than no knob, so it was removed.
 
 ## When the frequencies look absurd
 

@@ -201,8 +201,12 @@ class OZR_Module : CF_ModuleWorld
         OZR_Settings st = OZR_Settings.Get();
         if (st)
         {
+            float mirror = 0;
+            if (st.MirrorPtt)
+                mirror = 1;
+
             GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_AUDIO_RES,
-                new Param2<float, float>(st.SquelchGain, st.VoiceGain),
+                new Param3<float, float, int>(st.SquelchGain, mirror, st.SquelchRange),
                 true, sender);
         }
 
@@ -462,14 +466,15 @@ class OZR_Module : CF_ModuleWorld
         if (type != CallType.Client)
             return;
 
-        Param2<float, float> p = new Param2<float, float>(1.0, 1.0);
+        Param3<float, float, int> p = new Param3<float, float, int>(1.0, 1.0, OZR_Const.SQUELCH_RANGE_DEFAULT);
         if (!ctx.Read(p))
             return;
 
-        OZR_Audio.SetGains(p.param1, p.param2);
+        OZR_Audio.SetGains(p.param1, p.param2, p.param3);
 
         string got = "audio: squelch x" + p.param1.ToString();
-        got += ", radio voice x" + p.param2.ToString();
+        got += " within " + OZR_Audio.SquelchRung().ToString() + " m";
+        got += ", mirror ptt onto the voice key = " + p.param2.ToString();
         OZR_Log.Info(got);
     }
 

@@ -241,5 +241,17 @@ class OZR_Ptt
     private static void Send(bool on)
     {
         GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_PTT, new Param1<bool>(on), true);
+
+        // Info, щоб рядок стояв у КЛІЄНТСЬКОМУ лозі поруч із «von: ...».
+        // Дві половини однієї клавіші -- наша й ванільна -- інакше живуть у
+        // різних місцях: PTT видно на сервері, голос не видно ніде, і
+        // питання «чи спрацювали обидві» не має спостережуваної відповіді.
+        // Раз на натискання; натискання -- не кадр циклу.
+        string said = "ptt: key ";
+        if (on)
+            said += "DOWN";
+        else
+            said += "up";
+        OZR_Log.Info(said);
     }
 }

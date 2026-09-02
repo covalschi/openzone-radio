@@ -345,18 +345,19 @@ modded class TransmitterBase
         if (m_OZR_Air == m_OZR_AirHeard)
             return;
 
+        bool opening = m_OZR_Air;
         m_OZR_AirHeard = m_OZR_Air;
-        OZR_Squelch();
+        OZR_Squelch(opening);
     }
 
-    // Ванільний СЕМПЛ у власному наборі: аудіофайла мод не везе, але рівень
-    // задає свій. Ванільний шейдер зроблений тихим навмисне (volume = 0.0501,
-    // range = 13) -- це фоновий шип увімкненої рації, а не подія, яку треба
-    // помітити. Подробиці й числа -- у config.cpp.
+    // Власний семпл, власний рівень -- див. CfgSoundShaders у config.cpp.
     //
-    // Набір ЗАЦИКЛЕНИЙ, тож зупиняємо самі: сплеск -- це коротко, а не «шум
-    // до кінця світу», і довжина тут та сама на відкриття й на закриття.
-    private void OZR_Squelch()
+    // Одноразово, без таймера: набір не зациклений, тож рушій сам зупинить
+    // звук на кінці семпла й прибере його (SetAutodestroy у PlaySoundSet).
+    // Раніше тут грав зациклений ванільний шип, який доводилось обривати
+    // через CallLater -- і та довжина була нашою вигадкою, а не властивістю
+    // звуку.
+    private void OZR_Squelch(bool opening)
     {
         if (!GetGame() || GetGame().IsDedicatedServer())
             return;
@@ -366,12 +367,20 @@ modded class TransmitterBase
         if (!OZR_IsPowered())
             return;
 
-        if (!PlaySoundSetLoop(m_OZR_Squelch, OZR_Const.SQUELCH_SET, 0, 0))
+        // Набір вибирається за НАПРЯМОМ, а не за станом: до цього рядка
+        // m_OZR_Air уже новий, і питати його вдруге означало б питати те
+        // саме двічі й отримати правильну відповідь випадково.
+        // НЕ "set": так зветься контейнер рушія, і змінна з таким іменем не
+        // компілюється -- "Variable name 'set' already used as type name".
+        // Той самий рід пастки, що вже ловив Debug і Step у цьому ж моді.
+        string soundSet = OZR_Const.SquelchSet(OZR_Audio.SquelchRung(), opening);
+
+        if (!PlaySoundSet(m_OZR_Squelch, soundSet, 0, 0, false))
         {
             // Рівень Info, і лише на ВІДМОВІ. Набір, якого рушій не знайшов,
             // і набір, який просто тихий, зовні однакові -- обидва мовчать, --
             // а лікуються протилежно. Один рядок раз на сесію того вартий.
-            OZR_Log.Warn("squelch: the engine would not play " + OZR_Const.SQUELCH_SET + " - check CfgSoundSets and requiredAddons");
+            OZR_Log.Warn("squelch: the engine would not play " + soundSet + " - check CfgSoundSets and requiredAddons");
             return;
         }
 
@@ -381,12 +390,5 @@ modded class TransmitterBase
         // сервера, бо це питання балансу, а не вух.
         if (m_OZR_Squelch)
             m_OZR_Squelch.SetSoundVolume(OZR_Audio.SquelchGain());
-
-        GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(OZR_SquelchStop, OZR_Const.SQUELCH_MS, false);
-    }
-
-    private void OZR_SquelchStop()
-    {
-        StopSoundSet(m_OZR_Squelch);
     }
 }

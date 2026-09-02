@@ -86,27 +86,142 @@ class CfgMods
     };
 };
 
-// Звук сплеску -- ВЛАСНИЙ набір, хоч і на ванільному семплі.
+// Звук сплеску -- власний набір на власному семплі.
 //
-// Ванільний personalradio_staticnoise_SoundShader має volume = 0.0501 і
-// range = 13, і це не помилка: він створений як ледь чутний фоновий шип
-// увімкненої рації, який не мусить заважати. Сплеск, який має бути ПОМІЧЕНИМ
-// -- і своїм власником, і тими, хто поруч, -- на цих числах не чути майже
-// зовсім (перевірено власником 2026-09-02: «слишком тихий»).
+// Спершу він грав ванільний personalradio_staticnoise: той уже є в грі, і мод
+// лишався без жодного аудіофайла. Ціна виявилась зависокою. Той семпл -- шип
+// увімкненої рації (volume = 0.0501, range = 13 у ванільному шейдері), він
+// створений щоб НЕ помічатись, і навіть піднятий усемеро звучав як шум, а не
+// як клац передавача. Власник приніс справжній семпл рації, і це правильне
+// рішення: сплеск -- подія, а не фон.
 //
-// Множити гучність зі скрипта було б лікуванням не того місця: рівень
-// заданий конфігом, там йому й мінятись. Успадковуємось від ванільного
-// шейдера, щоб не переписувати шлях до семпла -- він у грі вже є, і мод
-// однаково не везе жодного аудіофайла.
+// Семпл: моно, 48 кГц, 0.28 с. Моно навмисне -- набір просторовий
+// (spatial = 1 у baseCharacter_SoundSet), а стерео в тривимірній сцені не
+// позиціонується.
 //
-// Числа: гучність у сім разів вища за ванільну (близько +17 дБ) і вдвічі
-// більша чутність. Це рація в сусідній кімнаті, а не постріл.
+// loop = 0, і це головна відмінність від попередньої версії: ванільний шип
+// зациклений, і його доводилось обривати таймером на 140 мс. Справжній
+// сплеск має власну довжину, тож обривати нічого -- рушій сам зупинить і
+// прибере (SetAutodestroy у PlaySoundSet).
+//
+// РАДІУС ЛІСЕНКОЮ, а не одним числом, і це вибір між двома звуковими API
+// гри, а не лінощі.
+//
+// У DayZ їх два, і вони дають РІЗНЕ. Набори (CfgSoundSets) дозволяють міняти
+// гучність на льоту -- EffectSound.SetSoundVolume, -- але радіус у них
+// заданий шейдером і після створення не рухається. Object.PlaySound бере
+// радіус аргументом, зате повертає SoundOnVehicle, у якого з усього API одне
+// GetSoundLength(): гучності там немає.
+//
+// Перейти на друге означало б переписати ще й модель затухання, тобто
+// переробити звук, який власник щойно прийняв. Тому лишається перше, а
+// налаштовуваний радіус робиться ступенями: по набору на відстань, і JSON
+// вибирає найближчу. Ступені видно в лозі, щоб «поставив 30, отримав 25» не
+// виглядало як несправність.
+//
+// Два звуки на кожній ступені: початок і кінець передачі звучать по-різному,
+// бо на слух саме різниця й розрізняє «почав» і «договорив».
 class CfgSoundShaders
 {
     class personalradio_staticnoise_SoundShader;
-    class OZR_Squelch_SoundShader: personalradio_staticnoise_SoundShader
+
+    class OZR_Squelch_R5: personalradio_staticnoise_SoundShader
     {
-        volume = 0.35;
+        samples[] =
+        {
+            {"OpenZone_Radio\sounds\ozr_squelch", 1}
+        };
+        volume = 0.5;
+        range  = 5;
+    };
+
+    class OZR_SquelchOff_R5: personalradio_staticnoise_SoundShader
+    {
+        samples[] =
+        {
+            {"OpenZone_Radio\sounds\ozr_squelch_off", 1}
+        };
+        volume = 0.5;
+        range  = 5;
+    };
+
+    class OZR_Squelch_R10: personalradio_staticnoise_SoundShader
+    {
+        samples[] =
+        {
+            {"OpenZone_Radio\sounds\ozr_squelch", 1}
+        };
+        volume = 0.5;
+        range  = 10;
+    };
+
+    class OZR_SquelchOff_R10: personalradio_staticnoise_SoundShader
+    {
+        samples[] =
+        {
+            {"OpenZone_Radio\sounds\ozr_squelch_off", 1}
+        };
+        volume = 0.5;
+        range  = 10;
+    };
+
+    class OZR_Squelch_R15: personalradio_staticnoise_SoundShader
+    {
+        samples[] =
+        {
+            {"OpenZone_Radio\sounds\ozr_squelch", 1}
+        };
+        volume = 0.5;
+        range  = 15;
+    };
+
+    class OZR_SquelchOff_R15: personalradio_staticnoise_SoundShader
+    {
+        samples[] =
+        {
+            {"OpenZone_Radio\sounds\ozr_squelch_off", 1}
+        };
+        volume = 0.5;
+        range  = 15;
+    };
+
+    class OZR_Squelch_R20: personalradio_staticnoise_SoundShader
+    {
+        samples[] =
+        {
+            {"OpenZone_Radio\sounds\ozr_squelch", 1}
+        };
+        volume = 0.5;
+        range  = 20;
+    };
+
+    class OZR_SquelchOff_R20: personalradio_staticnoise_SoundShader
+    {
+        samples[] =
+        {
+            {"OpenZone_Radio\sounds\ozr_squelch_off", 1}
+        };
+        volume = 0.5;
+        range  = 20;
+    };
+
+    class OZR_Squelch_R25: personalradio_staticnoise_SoundShader
+    {
+        samples[] =
+        {
+            {"OpenZone_Radio\sounds\ozr_squelch", 1}
+        };
+        volume = 0.5;
+        range  = 25;
+    };
+
+    class OZR_SquelchOff_R25: personalradio_staticnoise_SoundShader
+    {
+        samples[] =
+        {
+            {"OpenZone_Radio\sounds\ozr_squelch_off", 1}
+        };
+        volume = 0.5;
         range  = 25;
     };
 };
@@ -114,10 +229,65 @@ class CfgSoundShaders
 class CfgSoundSets
 {
     class personalradio_staticnoise_SoundSet;
-    class OZR_Squelch_SoundSet: personalradio_staticnoise_SoundSet
+
+    class OZR_Squelch_R5_SoundSet: personalradio_staticnoise_SoundSet
     {
-        soundShaders[] = {"OZR_Squelch_SoundShader"};
-        loop = 1;
+        soundShaders[] = {"OZR_Squelch_R5"};
+        loop = 0;
+    };
+
+    class OZR_SquelchOff_R5_SoundSet: personalradio_staticnoise_SoundSet
+    {
+        soundShaders[] = {"OZR_SquelchOff_R5"};
+        loop = 0;
+    };
+
+    class OZR_Squelch_R10_SoundSet: personalradio_staticnoise_SoundSet
+    {
+        soundShaders[] = {"OZR_Squelch_R10"};
+        loop = 0;
+    };
+
+    class OZR_SquelchOff_R10_SoundSet: personalradio_staticnoise_SoundSet
+    {
+        soundShaders[] = {"OZR_SquelchOff_R10"};
+        loop = 0;
+    };
+
+    class OZR_Squelch_R15_SoundSet: personalradio_staticnoise_SoundSet
+    {
+        soundShaders[] = {"OZR_Squelch_R15"};
+        loop = 0;
+    };
+
+    class OZR_SquelchOff_R15_SoundSet: personalradio_staticnoise_SoundSet
+    {
+        soundShaders[] = {"OZR_SquelchOff_R15"};
+        loop = 0;
+    };
+
+    class OZR_Squelch_R20_SoundSet: personalradio_staticnoise_SoundSet
+    {
+        soundShaders[] = {"OZR_Squelch_R20"};
+        loop = 0;
+    };
+
+    class OZR_SquelchOff_R20_SoundSet: personalradio_staticnoise_SoundSet
+    {
+        soundShaders[] = {"OZR_SquelchOff_R20"};
+        loop = 0;
+    };
+
+    class OZR_Squelch_R25_SoundSet: personalradio_staticnoise_SoundSet
+    {
+        soundShaders[] = {"OZR_Squelch_R25"};
+        loop = 0;
+    };
+
+    class OZR_SquelchOff_R25_SoundSet: personalradio_staticnoise_SoundSet
+    {
+        soundShaders[] = {"OZR_SquelchOff_R25"};
+        loop = 0;
     };
 };
 

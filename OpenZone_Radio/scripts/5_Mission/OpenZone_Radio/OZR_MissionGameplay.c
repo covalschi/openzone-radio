@@ -14,6 +14,10 @@ modded class MissionGameplay
 
         OZR_Ptt.Init();
         OZR_FreqInput.Init();
+        OZR_Von.Watch();
+
+        // Дзеркалення НЕ тут: воно залежить від налаштування, яке ще їде з
+        // сервера. Кличеться з OZR_Audio, коли пакет приїхав.
     }
 
     override void OnUpdate(float timeslice)
@@ -21,6 +25,10 @@ modded class MissionGameplay
         super.OnUpdate(timeslice);
         OZR_Ptt.Poll();
         OZR_FreqInput.Poll();
+
+        // Питаємо щокадру, бо чекаємо пакет із сервера й не знаємо, коли він
+        // прийде. Після першого разу це один порівняний біт.
+        OZR_Von.Mirror();
     }
 
     override UIScriptedMenu CreateScriptedMenu(int id)
@@ -56,6 +64,7 @@ modded class MissionGameplay
     {
         OZR_Ptt.Drop();
         OZR_FreqInput.Drop();
+        OZR_Von.Unwatch();
         super.OnMissionFinish();
     }
 }
