@@ -33,6 +33,31 @@ from the radio itself at close range — not in your headphones.
 **A frequency keypad.** Type a frequency instead of pressing "next channel" until you
 arrive.
 
+### One key for "talk", another for "talk on the air"
+
+Push-to-talk opens the radio's transmitter; it does not make you speak. Speaking is
+still the game's own voice key, because **no mod can start voice transmission** — the
+engine offers script only `EnableVoN(player, bool)`, which is a permission gate vanilla
+uses to silence the dead, and `SetVoiceLevel`, which is whisper/talk/shout. Transmitting
+is the native input `UAVoiceOverNet`, and nothing in script can press it.
+
+Holding two keys at once is not the answer either. Give the game's voice input a
+**second binding** on the key you use for the radio, and one press does both:
+
+| input | key | result |
+|---|---|---|
+| `UAVoiceOverNet` | CapsLock *(primary)* | speak to the people around you |
+| `UAVoiceOverNet` | End *(alternative)* | — |
+| `UAOZRadioPtt` | End | — |
+
+Now **CapsLock is proximity only** and **End is proximity and radio together**, one key
+each. In the controls screen: bind "Radio: push to talk" to the key you want, then add
+that same key as the alternative binding of "Voice over Network". The two inputs share
+the key and both fire; DayZ allows this, and the pair above was driven on the stand.
+
+The choice of End is only an example — any free key works. What matters is that the
+radio key carries both inputs and the plain voice key carries only one.
+
 ## The three parts
 
 The repository builds **three separate mods**, and this matters when you install:
