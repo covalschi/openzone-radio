@@ -49,7 +49,11 @@ the radio is deleted. It measures rather than assumes.
 increments, between which bounds. Eleven ship as defaults.
 
 [b]Push-to-talk with a squelch.[/b] A short burst of static on key down and key up,
-heard from the radio itself at close range — not in your headphones.
+played on the radio itself, so everyone near you hears it too — the set gives you away,
+it is not a noise in your headphones.
+
+[b]One radio speaks, not all of them.[/b] The one in your hands; with your hands empty,
+the one on a slot you held last. A radio in cargo never speaks — that one is a spare.
 
 [b]A frequency keypad.[/b] Type a frequency instead of pressing "next channel" until
 you arrive.
@@ -145,7 +149,11 @@ CC BY-NC-SA 4.0 plus the permissions above. Full text in the repository.
 кроком і між якими межами. Одинадцять іде за умовчанням.
 
 [b]Push-to-talk зі squelch.[/b] Короткий сплеск статики на натисканні й відпусканні,
-чутний від самої рації зблизька — не в навушниках.
+який грає на самій рації — тож його чують і ті, хто поруч. Це рація видає вас, а не шум
+у ваших навушниках.
+
+[b]Говорить одна рація, а не всі.[/b] Та, що в руках; коли руки порожні — та на слоті,
+яку ви тримали останньою. Рація в карго не говорить ніколи: вона запасна.
 
 [b]Клавіатура частоти.[/b] Набрати частоту, а не тиснути «наступний канал», поки не
 дійдеш.

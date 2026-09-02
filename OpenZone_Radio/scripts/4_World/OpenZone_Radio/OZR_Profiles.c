@@ -133,6 +133,25 @@ class OZR_Profiles : OZR_ConfigBase
                 continue;
             }
 
+            // Нижня межа мусить бути ДОДАТНОЮ, і це не те саме, що
+            // «непорожня смуга».
+            //
+            // Профіль 0..150 проходив перевірку нижче -- нуль менший за сто
+            // п'ятдесят, смуга не порожня. А потім із нього виводили ефір:
+            // база стає нулем, і сітка на 0.0125 МГц від нуля до верху
+            // найширшого профілю -- це дванадцять тисяч ділень замість тисячі
+            // з гаком, тобто ефір, розтягнутий на частоти, яких рація не має.
+            // Нуль тут -- це майже завжди незаповнене поле, а не намір.
+            if (p.MinMHz <= 0)
+            {
+                string low = "profile " + p.ClassName + " starts at " + OZR_Fmt.MHz(p.MinMHz);
+                low += " - a band has to start above zero; dropped";
+                OZR_Log.Warn(low);
+                Radios.Remove(i);
+                warnings++;
+                continue;
+            }
+
             if (p.MinMHz >= p.MaxMHz)
             {
                 string empty = "profile " + p.ClassName + " has an empty band (";

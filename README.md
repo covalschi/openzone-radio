@@ -27,8 +27,13 @@ has to know about itself — and it measures rather than assumes.
 **Radio profiles.** Bands, steps and limits in JSON: who may tune where, in what
 increments, and between which bounds. Eleven profiles ship as defaults.
 
-**Push-to-talk with a squelch.** A short burst of static on key down and key up, heard
-from the radio itself at close range — not in your headphones.
+**Push-to-talk with a squelch.** A short burst of static on key down and key up, played
+on the radio itself, so everyone near you hears it too — it is the set giving you away,
+not a noise in your headphones.
+
+**One radio speaks, not all of them.** The one in your hands; with your hands empty, the
+one on a slot that you held last. A radio in cargo never speaks — that one is a spare.
+Carry three sets on three frequencies and the key still opens exactly one.
 
 **A frequency keypad.** Type a frequency instead of pressing "next channel" until you
 arrive.

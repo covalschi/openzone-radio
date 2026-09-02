@@ -214,23 +214,38 @@ class OZR_FreqMenu extends UIScriptedMenu
 
     static bool CanOpen()
     {
+        return WhyNotOpen() == "";
+    }
+
+    // Чому не відкриється -- словами, і порожній рядок означає «відкриється».
+    //
+    // Мовчазна відмова тут коштувала дорожче за все інше в цьому файлі:
+    // клавіша, яка нічого не робить, читається як зламаний мод, і відрізнити
+    // «немає ефіру» від «рація вимкнена» чи «профіль не приїхав» не міг ніхто
+    // -- ні гравець, ні той, кому він про це напише. П'ять різних причин
+    // виглядали однаково.
+    static string WhyNotOpen()
+    {
         if (!OZR_ClientGrid.Ready())
-            return false;
+            return "no ether: the server has not sent a usable frequency grid";
 
         PlayerBase p = PlayerBase.Cast(GetGame().GetPlayer());
         if (!p || !p.GetHumanInventory())
-            return false;
+            return "no player inventory";
 
         TransmitterBase t = TransmitterBase.Cast(p.GetHumanInventory().GetEntityInHands());
         if (!t)
-            return false;
+            return "nothing in hands that can transmit";
 
         // Вимкнена рація нічого не вміє, і клавіатура над нею -- обіцянка,
         // якої ніхто не виконає.
         if (!t.OZR_IsPowered())
-            return false;
+            return t.GetType() + " is not powered";
 
-        return OZR_ClientGrid.For(t.GetType()) != null;
+        if (!OZR_ClientGrid.For(t.GetType()))
+            return "no profile for " + t.GetType() + " (" + OZR_ClientGrid.ProfileCount().ToString() + " profile(s) received)";
+
+        return "";
     }
 
     private void Paint()

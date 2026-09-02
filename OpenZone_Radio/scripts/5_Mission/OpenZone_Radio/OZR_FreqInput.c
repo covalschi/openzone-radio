@@ -114,8 +114,14 @@ class OZR_FreqInput
         if (GetGame().GetUIManager().IsMenuOpen(MENU_INVENTORY))
             return;
 
-        if (!OZR_FreqMenu.CanOpen())
+        // Кажемо ВГОЛОС, чому ні. Натиснення клавіші -- це не кадр циклу, а
+        // свідома дія, тож рядок на неї не спам, а відповідь.
+        string why = OZR_FreqMenu.WhyNotOpen();
+        if (why != "")
+        {
+            OZR_Log.Info("freq keypad: not opening - " + why);
             return;
+        }
 
         UIScriptedMenu made = GetGame().GetUIManager().EnterScriptedMenu(OZR_Const.MENU_FREQ, null);
         if (!made)

@@ -23,6 +23,24 @@ modded class TransmitterBase
     // це справжній канал, і сплутати «канал 0» з «невідомо» не можна.
     private int m_OZR_Index = -1;
 
+    // Чи відкритий ефір. Синхронізується, бо squelch мусять чути ВСІ поруч.
+    private bool m_OZR_Air = false;
+
+    // Що клієнт уже намалював звуком. Порівнюємо з m_OZR_Air, щоб зіграти на
+    // КРАЮ, а не щоразу, коли предмет синхронізувався з якоїсь іншої причини.
+    private bool m_OZR_AirHeard = false;
+
+    // Коли рація востаннє була в руках. Час рушія, серверний бік.
+    //
+    // Нуль означає «за цю сесію не тримали». Це не те саме, що «не носять»:
+    // після рестарту сервера пам'ять порожня в усіх, і PTT не має через це
+    // замовкнути -- див. OZR_Module.OZR_SetAll.
+    private int m_OZR_HeldAt = 0;
+
+    // Не ref: EffectSound належить SEffectManager, і ваніль тримає свій
+    // m_SoundLoop так само (transmitterbase.c:7).
+    private EffectSound m_OZR_Squelch;
+
     void TransmitterBase()
     {
         // БЕЗ МЕЖ, і це навмисна відмова від попереднього рішення.
@@ -42,6 +60,12 @@ modded class TransmitterBase
         // Прив'язку до стелі ефіру це не втрачає, а робить непотрібною: повний
         // int возить будь-яке ділення, яке взагалі може існувати.
         RegisterNetSyncVariableInt("m_OZR_Index");
+
+        // Ефір їде окремим бітом, і возити його доводиться з тієї ж причини,
+        // що й індекс: EnableBroadcast -- рушійний стан, і SetSynchDirty про
+        // нього нічого не знає. Без цього біта squelch чув би лише той, хто
+        // натиснув, бо звук грає КЛІЄНТ, а рішення приймає сервер.
+        RegisterNetSyncVariableBool("m_OZR_Air");
     }
 
     // Єдине місце, де частота міняється. Все інше кличе саме його, щоб не
@@ -170,6 +194,27 @@ modded class TransmitterBase
             OZR_Publish();
     }
 
+    // Рація потрапила в руки -- запам'ятовуємо КОЛИ.
+    //
+    // Гравець носить кілька рацій, а говорить в одну: ту, яку діставав. Місце
+    // саме по собі цього не каже -- дві рації на двох слотах виглядають
+    // однаково, -- тому потрібен час, а не лише розташування.
+    override void EEItemLocationChanged(notnull InventoryLocation oldLoc, notnull InventoryLocation newLoc)
+    {
+        super.EEItemLocationChanged(oldLoc, newLoc);
+
+        if (!GetGame() || !GetGame().IsServer())
+            return;
+
+        if (newLoc.GetType() == InventoryLocationType.HANDS)
+            m_OZR_HeldAt = GetGame().GetTime();
+    }
+
+    int OZR_HeldAt()
+    {
+        return m_OZR_HeldAt;
+    }
+
     // Предмет щойно підняли зі збереження -- рушій уже поставив збережений
     // індекс, і про нього теж треба сказати, інакше після рестарту клієнт
     // побачив би не ту частоту, на якій рація насправді стоїть.
@@ -258,6 +303,7 @@ modded class TransmitterBase
         }
 
         EnableBroadcast(on);
+        OZR_PublishAir(on);
 
         string said = "ptt gate: " + GetType() + " air ";
         if (on)
@@ -265,5 +311,70 @@ modded class TransmitterBase
         else
             said += "shut";
         OZR_Log.Dbg(said + ", broadcasting=" + IsBroadcasting().ToString());
+    }
+
+    // ------------------------------------------------------------- squelch
+    //
+    // Сплеск статики на відкриття й на закриття ефіру -- те, чим справжня
+    // рація видає себе сусідам, і єдиний спосіб ПОЧУТИ, що поруч хтось
+    // вийшов в ефір, не бачачи його екрана.
+    //
+    // Звук грає на самій рації через SEffectManager.PlaySoundOnObject, тобто
+    // тривимірно, з її позиції. Тому його чують УСІ, хто поруч, а не власник
+    // у навушниках: кожен клієнт, у чиєму пузирі ця рація є, програє його сам.
+    //
+    // Саме тому рішення й возиться бітом. Якби squelch грали там, де
+    // натиснули кнопку, його чув би рівно одна людина -- та, якій він і так
+    // не потрібен.
+    void OZR_PublishAir(bool on)
+    {
+        if (!GetGame() || !GetGame().IsServer())
+            return;
+
+        if (m_OZR_Air == on)
+            return;
+
+        m_OZR_Air = on;
+        SetSynchDirty();
+    }
+
+    override void OnVariablesSynchronized()
+    {
+        super.OnVariablesSynchronized();
+
+        if (m_OZR_Air == m_OZR_AirHeard)
+            return;
+
+        m_OZR_AirHeard = m_OZR_Air;
+        OZR_Squelch();
+    }
+
+    // Ванільний набір статики, а не власний файл: рація його вже несе
+    // (PersonalRadio.SOUND_RADIO_TURNED_ON), він звучить саме як ефір, і мод
+    // лишається без жодного аудіоресурсу -- тобто його можна поставити з
+    // Workshop і нічого не докладати.
+    //
+    // Набір ЗАЦИКЛЕНИЙ, тож зупиняємо самі: сплеск -- це коротко, а не «шум
+    // до кінця світу», і довжина тут та сама на відкриття й на закриття.
+    private void OZR_Squelch()
+    {
+        if (!GetGame() || GetGame().IsDedicatedServer())
+            return;
+
+        if (SOUND_RADIO_TURNED_ON == "")
+            return;
+
+        // IsWorking(), а не IsSwitchedOn(): у вимкненої коробки ефіру не
+        // буває, і сплеск від неї був би звуком події, якої не сталося.
+        if (!OZR_IsPowered())
+            return;
+
+        PlaySoundSetLoop(m_OZR_Squelch, SOUND_RADIO_TURNED_ON, 0, 0);
+        GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(OZR_SquelchStop, OZR_Const.SQUELCH_MS, false);
+    }
+
+    private void OZR_SquelchStop()
+    {
+        StopSoundSet(m_OZR_Squelch);
     }
 }

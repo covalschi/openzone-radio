@@ -129,6 +129,16 @@ class OZR_ClientGrid
         return s_Step;
     }
 
+    // Скільки профілів доїхало. Потрібне рівно для однієї відповіді -- «нуль»
+    // проти «є, але не для цієї рації», -- і без нього ці два випадки в
+    // діагностиці нерозрізненні.
+    static int ProfileCount()
+    {
+        if (!s_Radios)
+            return 0;
+        return s_Radios.Count();
+    }
+
     static OZR_RadioProfile For(string className)
     {
         if (!s_Radios)
