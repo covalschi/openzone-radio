@@ -38,7 +38,7 @@ class OZR_Settings : OZR_ConfigBase
     // За скільки метрів чути сплеск. Ступенями -- 10, 25, 50, 100, 200, --
     // і береться найближча; чому не будь-яке число, написано в config.cpp
     // над CfgSoundShaders.
-    int SquelchRange = 25;
+    int SquelchRange = OZR_Const.SQUELCH_RANGE_DEFAULT;
 
     // Чи говорить рація з рюкзака.
     //

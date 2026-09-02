@@ -149,7 +149,7 @@ its log rather than leaving the delay to be discovered.
 | Setting | What it does |
 |---|---|
 | `SquelchGain` | Multiplies the burst of static. `1.0` is the level set in `config.cpp` |
-| `SquelchRange` | How far it is heard, in metres |
+| `SquelchRange` | How far it is heard, in metres. `15` by default |
 | `MirrorPtt` | Adds your push-to-talk key as a second binding on the game's voice key, so one press does both. `true` by default |
 | `PttFromCargo` | Whether a radio in a backpack may speak. `true` by default |
 
