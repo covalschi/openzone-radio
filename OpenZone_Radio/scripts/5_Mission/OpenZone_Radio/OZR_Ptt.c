@@ -199,7 +199,7 @@ class OZR_Ptt
         for (int i = 0; i < items.Count(); i++)
         {
             TransmitterBase t = TransmitterBase.Cast(items[i]);
-            if (!t || !t.OZR_IsPowered() || !OZR_ClientGrid.For(t.GetType()))
+            if (!t || !OZR_ClientGrid.For(t.GetType()))
                 continue;
 
             if (t.OZR_SpeakRank(cargo) > 0)

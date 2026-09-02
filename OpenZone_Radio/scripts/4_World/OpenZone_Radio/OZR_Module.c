@@ -374,8 +374,8 @@ class OZR_Module : CF_ModuleWorld
                 if (!c || !OZR_Profiles.For(c.GetType()))
                     continue;
 
-                c.OZR_SetSpeaking(false, false);
-                shut++;
+                if (c.OZR_SetSpeaking(false, false))
+                    shut++;
             }
             return shut;
         }
@@ -384,7 +384,12 @@ class OZR_Module : CF_ModuleWorld
         if (!pick)
             return 0;
 
-        pick.OZR_SetSpeaking(true, locked);
+        // Нуль і тут можливий: рацію могли вимкнути між пакетом і його
+        // обробкою. Лічити вибір замість результату означало б писати в лог
+        // "opens 1" над мовчазним ефіром -- саме так ця вада й ховалась.
+        if (!pick.OZR_SetSpeaking(true, locked))
+            return 0;
+
         return 1;
     }
 

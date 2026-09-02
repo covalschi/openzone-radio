@@ -266,6 +266,17 @@ modded class TransmitterBase
         // Вісім ланок -- стеля з R-E1.8: цикл у батьках не має вішати кадр.
         // Реальний ланцюжок -- три-чотири (плата -> КПК -> розвантаження ->
         // гравець), тож вісім не обмежують нікого чесного.
+        // Знеструмлена рація -- не кандидат, і це правило СПІЛЬНЕ для обох
+        // сторін, тому живе тут, а не в тому, хто питає.
+        //
+        // Зміряно 2026-09-02: вимкнена рація в руках вигравала за місцем
+        // (ранг 3), OZR_SetSpeaking їй відмовляв, а клієнт, який мертві
+        // коробки й так пропускав, знаходив увімкнену на слоті й засвічував
+        // ON AIR. У підсумку індикатор горів, а ефір мовчав -- і в лозі
+        // стояло "opens 1", бо рахували вибраних, а не відкритих.
+        if (!OZR_IsPowered())
+            return 0;
+
         if (!GetInventory())
             return 0;
 
@@ -401,7 +412,9 @@ modded class TransmitterBase
     // Перевірка живлення тут не зайва, хоч клієнт її вже робив: вимкнути
     // рацію можна між пакетом і його обробкою, а відкритий передавач на
     // знеструмленій коробці -- це стан, якого не буває.
-    void OZR_SetSpeaking(bool on, bool locked)
+    // Повертає, чи ефір справді перемкнувся: відмова знеструмленій рації --
+    // це "false", і лічильник у OZR_SetAll рахує саме це, а не сам вибір.
+    bool OZR_SetSpeaking(bool on, bool locked)
     {
         if (!OZR_IsPowered())
         {
@@ -409,7 +422,7 @@ modded class TransmitterBase
             OZR_PublishAir(false);
             m_OZR_Latched = false;
             OZR_Log.Dbg("ptt gate: " + GetType() + " asked to speak while dead - refused");
-            return;
+            return false;
         }
 
         m_OZR_Latched = on && locked;
@@ -423,6 +436,7 @@ modded class TransmitterBase
         else
             said += "shut";
         OZR_Log.Dbg(said + ", broadcasting=" + IsBroadcasting().ToString());
+        return true;
     }
 
     // ------------------------------------------------------------- squelch

@@ -62,7 +62,7 @@ whole thing can be switched off from the server.
 [b]One radio speaks, not all of them.[/b] The one in your hands; with your hands empty,
 the one on a slot you held last; a set in cargo only when there is neither, and the
 server can forbid that outright. The whole chain down to you counts: a radio on a vest
-that lies in your backpack is a cargo radio.
+that lies in your backpack is a cargo radio. A switched-off set is never a candidate.
 
 [b]A frequency keypad.[/b] Type a frequency instead of pressing "next channel" until
 you arrive.
@@ -175,7 +175,7 @@ CC BY-NC-SA 4.0 plus the permissions above. Full text in the repository.
 [b]Говорить одна рація, а не всі.[/b] Та, що в руках; коли руки порожні — та на слоті,
 яку ви тримали останньою; комплект у карго — лише коли немає ні тієї, ні тієї, і сервер
 може заборонити це зовсім. Важить увесь ланцюжок до вас: рація на жилеті, що лежить у
-рюкзаку, — це рація в карго.
+рюкзаку, — це рація в карго. Вимкнений комплект не кандидат ніколи.
 
 [b]Клавіатура частоти.[/b] Набрати частоту, а не тиснути «наступний канал», поки не
 дійдеш.

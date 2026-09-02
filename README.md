@@ -35,7 +35,9 @@ not a noise in your headphones.
 one on a slot that you held last; only when there is neither, one lying in cargo — and the
 server may rule cargo out altogether (`PttFromCargo`). What counts is the whole chain down
 to you, not the last link: a set on the slot of a vest that lies in your backpack is a
-cargo radio. Carry three sets on three frequencies and the key still opens exactly one.
+cargo radio. A switched-off set is never a candidate, wherever it sits: holding a dead
+radio does not silence the live one on your chest. Carry three sets on three frequencies
+and the key still opens exactly one.
 
 **A frequency keypad.** Type a frequency instead of pressing "next channel" until you
 arrive.
