@@ -50,7 +50,8 @@ class OZR_Ptt
     private static const int DOUBLE_MS = 400;
 
     // Що вже сказано серверові.
-    private static bool s_Sent = false;
+    private static bool s_Sent     = false;
+    private static bool s_SentLock = false;
 
     // Обхід інвентаря коштує помітно більше за читання клавіші, а відповідь
     // «чи є жива рація» між кадрами не міняється. Тому він робиться п'ять
@@ -135,9 +136,10 @@ class OZR_Ptt
         s_LastPress = 0;
 
         if (s_Sent)
-            Send(false);
+            Send(false, false);
 
         s_Sent      = false;
+        s_SentLock  = false;
         s_HasRadio  = false;
         s_LookedAt  = 0;
 
@@ -227,11 +229,18 @@ class OZR_Ptt
         }
 
         bool want = asked && s_HasRadio;
+        bool lock = want && s_Latched;
 
-        if (want != s_Sent)
+        // Край защіпки -- теж край, і возити його доводиться окремо: коли
+        // клавішу тримають і в цю мить ставлять замок, want не міняється
+        // ЗОВСІМ (був true, лишився true), і сервер про замок не дізнався б
+        // ніколи. А різниця між утриманням і замком для нього суттєва:
+        // кинуту рацію з замком він лишає говорити, а з утриманням -- ні.
+        if (want != s_Sent || lock != s_SentLock)
         {
-            Send(want);
-            s_Sent = want;
+            Send(want, lock);
+            s_Sent     = want;
+            s_SentLock = lock;
         }
 
         // Іконка горить РІВНО поки йде передача. Постійна лампочка «рація при
@@ -248,9 +257,9 @@ class OZR_Ptt
     }
 
     // Ручна рація: свій RPC, бо це не сторінка КПК і предмет тут інший.
-    private static void Send(bool on)
+    private static void Send(bool on, bool locked)
     {
-        GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_PTT, new Param1<bool>(on), true);
+        GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_PTT, new Param2<bool, bool>(on, locked), true);
 
         // Info, щоб рядок стояв у КЛІЄНТСЬКОМУ лозі поруч із «von: ...».
         // Дві половини однієї клавіші -- наша й ванільна -- інакше живуть у
@@ -262,6 +271,8 @@ class OZR_Ptt
             said += "DOWN";
         else
             said += "up";
+        if (locked)
+            said += " (latched)";
         OZR_Log.Info(said);
     }
 }

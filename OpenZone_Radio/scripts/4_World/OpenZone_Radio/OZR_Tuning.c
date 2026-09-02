@@ -26,6 +26,14 @@ modded class TransmitterBase
     // Чи відкритий ефір. Синхронізується, бо squelch мусять чути ВСІ поруч.
     private bool m_OZR_Air = false;
 
+    // Чим саме він відкритий: утриманням клавіші чи защіпкою.
+    //
+    // Різниця не косметична. Кинута рація з УТРИМАННЯМ мусить замовкнути --
+    // край відпускання по неї вже не прийде. Кинута рація із ЗАЩІПКОЮ мусить
+    // говорити далі: замок ставлять навмисне, і підкинута відкрита рація --
+    // це інструмент, а не недогляд (рішення власника 2026-09-02).
+    private bool m_OZR_Latched = false;
+
     // Що клієнт уже намалював звуком. Порівнюємо з m_OZR_Air, щоб зіграти на
     // КРАЮ, а не щоразу, коли предмет синхронізувався з якоїсь іншої причини.
     private bool m_OZR_AirHeard = false;
@@ -208,6 +216,24 @@ modded class TransmitterBase
 
         if (newLoc.GetType() == InventoryLocationType.HANDS)
             m_OZR_HeldAt = GetGame().GetTime();
+
+        // Рація змінила місце з відкритим ефіром -- закриваємо, якщо його
+        // тримала КЛАВІША, і лишаємо, якщо замок.
+        //
+        // Чому це взагалі тут. Край відпускання обходить інвентар ГРАВЦЯ, а
+        // рації, яку щойно кинули, там уже немає -- отже закрити її нема кому,
+        // і вона лишалась би відкритою на землі назавжди, транслюючи все, що
+        // скажуть поруч. Відкритий мікрофон, якого ніхто не вимкне. Саме від
+        // цього PTT і заводили, тож дірка була в найгіршому місці.
+        //
+        // Із замком це, навпаки, робоча поведінка: підкинути відкриту рацію --
+        // намір, а не помилка.
+        if (m_OZR_Air && !m_OZR_Latched)
+        {
+            EnableBroadcast(false);
+            OZR_PublishAir(false);
+            OZR_Log.Dbg("ptt gate: " + GetType() + " left its place with the air open on a held key - shut");
+        }
     }
 
     int OZR_HeldAt()
@@ -324,14 +350,18 @@ modded class TransmitterBase
     // Перевірка живлення тут не зайва, хоч клієнт її вже робив: вимкнути
     // рацію можна між пакетом і його обробкою, а відкритий передавач на
     // знеструмленій коробці -- це стан, якого не буває.
-    void OZR_SetSpeaking(bool on)
+    void OZR_SetSpeaking(bool on, bool locked)
     {
         if (!OZR_IsPowered())
         {
             EnableBroadcast(false);
+            OZR_PublishAir(false);
+            m_OZR_Latched = false;
             OZR_Log.Dbg("ptt gate: " + GetType() + " asked to speak while dead - refused");
             return;
         }
+
+        m_OZR_Latched = on && locked;
 
         EnableBroadcast(on);
         OZR_PublishAir(on);

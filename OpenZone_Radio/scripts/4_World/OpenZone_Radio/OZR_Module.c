@@ -334,7 +334,7 @@ class OZR_Module : CF_ModuleWorld
         if (type != CallType.Server || !sender)
             return;
 
-        Param1<bool> p = new Param1<bool>(false);
+        Param2<bool, bool> p = new Param2<bool, bool>(false, false);
         if (!ctx.Read(p))
             return;
 
@@ -342,20 +342,23 @@ class OZR_Module : CF_ModuleWorld
         if (!player || !player.GetInventory())
             return;
 
-        int touched = OZR_SetAll(player, p.param1);
+        int touched = OZR_SetAll(player, p.param1, p.param2);
 
         string said = "ptt: " + sender.GetName();
         if (p.param1)
             said += " opens ";
         else
             said += " shuts ";
-        OZR_Log.Dbg(said + touched.ToString() + " radio(s)");
+        said += touched.ToString() + " radio(s)";
+        if (p.param2)
+            said += " (latched)";
+        OZR_Log.Dbg(said);
     }
 
     // Скільки передавачів перемкнули. Число повертається не для краси: «нуль»
     // -- це єдине, чим відрізняється «гравець натиснув кнопку без рації» від
     // «пакет не дійшов», і без нього обидва випадки виглядають у лозі однаково.
-    private int OZR_SetAll(PlayerBase player, bool on)
+    private int OZR_SetAll(PlayerBase player, bool on, bool locked)
     {
         array<EntityAI> items = new array<EntityAI>();
         if (!player.GetInventory().EnumerateInventory(InventoryTraversalType.PREORDER, items))
@@ -371,7 +374,7 @@ class OZR_Module : CF_ModuleWorld
                 if (!c || !OZR_Profiles.For(c.GetType()))
                     continue;
 
-                c.OZR_SetSpeaking(false);
+                c.OZR_SetSpeaking(false, false);
                 shut++;
             }
             return shut;
@@ -381,7 +384,7 @@ class OZR_Module : CF_ModuleWorld
         if (!pick)
             return 0;
 
-        pick.OZR_SetSpeaking(true);
+        pick.OZR_SetSpeaking(true, locked);
         return 1;
     }
 
