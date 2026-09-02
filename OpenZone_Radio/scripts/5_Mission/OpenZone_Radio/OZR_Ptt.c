@@ -61,6 +61,16 @@ class OZR_Ptt
     private static int  s_LookedAt  = 0;
     private static const int LOOK_EVERY_MS = 200;
 
+    // Чи говорить ЗАРАЗ хоч одна рація гравця -- за синхронізованим станом
+    // передавача, а не за тим, що ми думаємо про клавішу.
+    //
+    // Питається рідше за клавішу: це не край, а стан, і секунда затримки в
+    // лампочці нікому не коштує. Зате питається ЗАВЖДИ, а не лише поки
+    // тримають кнопку -- саме в цьому й сенс.
+    private static bool s_AirSeen   = false;
+    private static int  s_AirLooked = 0;
+    private static const int AIR_EVERY_MS = 1000;
+
     static void Init()
     {
         UAInput i = GetUApi().GetInputByName(OZR_Const.INPUT_PTT);
@@ -142,6 +152,8 @@ class OZR_Ptt
         s_SentLock  = false;
         s_HasRadio  = false;
         s_LookedAt  = 0;
+        s_AirSeen   = false;
+        s_AirLooked = 0;
 
         OZR_PttHud.Drop();
     }
@@ -179,6 +191,33 @@ class OZR_Ptt
     //
     // Це рішення тільки про ІКОНКУ. Кого насправді відкрити, вирішує сервер за
     // своїм списком: клієнтові вірити в такому не можна.
+    // Чи веде передачу хоч одна рація, яку гравець несе.
+    //
+    // Умисно НЕ питає ні місця, ні вибраності: відкритий передавач у рюкзаку
+    // -- це саме те, про що лампочка мусить сказати, навіть якщо гашетка
+    // його не відкривала й не могла б відкрити.
+    private static bool LookForOpenAir()
+    {
+        PlayerBase p = PlayerBase.Cast(GetGame().GetPlayer());
+        if (!p || !p.GetInventory())
+            return false;
+
+        array<EntityAI> items = new array<EntityAI>();
+        if (!p.GetInventory().EnumerateInventory(InventoryTraversalType.PREORDER, items))
+            return false;
+
+        for (int i = 0; i < items.Count(); i++)
+        {
+            TransmitterBase t = TransmitterBase.Cast(items[i]);
+            if (!t || !OZR_ClientGrid.For(t.GetType()))
+                continue;
+
+            if (t.OZR_AirOpen())
+                return true;
+        }
+        return false;
+    }
+
     private static bool LookForRadio()
     {
         PlayerBase p = PlayerBase.Cast(GetGame().GetPlayer());
@@ -253,8 +292,23 @@ class OZR_Ptt
         // Іконка горить РІВНО поки йде передача. Постійна лампочка «рація при
         // тобі» нічого не повідомляє: рацію видно в інвентарі й так, а те, що
         // світиться завжди, перестає читатись саме тоді, коли має значення.
+        //
+        // Читаємо ФАКТ, а не намір. Раніше тут стояв want -- те, що клієнт
+        // ЗБИРАВСЯ зробити, -- і будь-яка розбіжність із сервером ставала
+        // невидимою: рація говорила, а лампочка не горіла. Найгірший випадок
+        // цього ще попереду й уже названий: защіпка живе на клієнті й гине
+        // при виході, тож рація, забута відкритою, повернулась би вести
+        // передачу з темною іконкою. Стан передавача синхронізується заради
+        // squelch, отже питати його -- дешево й чесно.
+        int now2 = GetGame().GetTime();
+        if (now2 - s_AirLooked >= AIR_EVERY_MS || s_AirLooked == 0)
+        {
+            s_AirLooked = now2;
+            s_AirSeen   = LookForOpenAir();
+        }
+
         int mode = OZR_PttHud.MODE_NONE;
-        if (want)
+        if (s_AirSeen)
         {
             mode = OZR_PttHud.MODE_LIVE;
             if (s_Latched)

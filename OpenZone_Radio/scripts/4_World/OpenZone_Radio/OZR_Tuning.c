@@ -272,6 +272,14 @@ modded class TransmitterBase
         return m_OZR_Chosen;
     }
 
+    // Чи відкритий ефір -- ФАКТ, а не намір. Синхронізується заради squelch,
+    // тож на клієнті це справжній стан передавача, а не те, що клієнт про
+    // нього думає.
+    bool OZR_AirOpen()
+    {
+        return m_OZR_Air;
+    }
+
     void OZR_SetChosen(bool on)
     {
         if (m_OZR_Chosen == on)
