@@ -40,6 +40,15 @@ class OZR_Settings : OZR_ConfigBase
     // над CfgSoundShaders.
     int SquelchRange = 25;
 
+    // Чи говорить рація з рюкзака.
+    //
+    // Умовчання -- ні, і це не сувора настройка, а опис того, як рацією
+    // користуються: дістав, повісив на розвантаження, говориш. Рація в
+    // карго -- запасна. Але сервер, де рюкзак це і є розвантаження, має
+    // право вирішити інакше, і тоді карго стає третім рівнем після рук і
+    // слота, а не рівним їм: одна рація говорить однаково.
+    bool PttFromCargo = false;
+
     private static ref OZR_Settings s_Inst;
 
     static OZR_Settings Get()
@@ -59,6 +68,7 @@ class OZR_Settings : OZR_ConfigBase
         SquelchGain = 1.0;
         MirrorPtt   = true;
         SquelchRange = OZR_Const.SQUELCH_RANGE_DEFAULT;
+        PttFromCargo = false;
     }
 
     static void ServerLoad()

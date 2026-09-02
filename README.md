@@ -150,6 +150,8 @@ its log rather than leaving the delay to be discovered.
 |---|---|
 | `SquelchGain` | Multiplies the burst of static. `1.0` is the level set in `config.cpp` |
 | `SquelchRange` | How far it is heard, in metres |
+| `MirrorPtt` | Adds your push-to-talk key as a second binding on the game's voice key, so one press does both. `true` by default |
+| `PttFromCargo` | Whether a radio in a backpack may speak. `false` by default |
 
 `SquelchRange` moves in **steps** — 5, 10, 15, 20, 25 — and the nearest one is
 taken; ask for 13 and you get 15, and the log says so rather than leaving you to
@@ -159,8 +161,23 @@ sound sets let a mod change volume at runtime but fix the radius in config, whil
 Keeping the sets means keeping the sound; the radius then comes from picking
 among prepared ones.
 
-Both are read when the server starts and travel to each client on connect, so a
-change needs a server restart.
+All four are read when the server starts and travel to each client on connect, so a
+change needs a server restart. Moving `SquelchRange` between steps needs nothing from
+players — the sets are already in their copy of the mod, and the server only names the
+one to use.
+
+### Which radio speaks
+
+Still one, never all of them, and `PttFromCargo` only widens where that one may be
+found. The order is place first, freshness second:
+
+1. the radio **in your hands** — it wins outright
+2. otherwise the one **on a slot**, most recently held
+3. with `PttFromCargo` on, otherwise the one **in cargo**, most recently held
+
+A worn radio beats one in a backpack even if the backpack one was held later: the place
+is the intent, and the timestamp only separates equals. The HUD icon follows the same
+rule, so it lights when the key will do something and not before.
 
 **There is no setting for the loudness of the voice itself, and that is a finding
 rather than an omission.** The engine has a radio mixer channel, and DayZ's sound

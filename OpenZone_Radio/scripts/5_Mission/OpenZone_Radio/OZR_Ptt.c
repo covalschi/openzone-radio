@@ -187,10 +187,20 @@ class OZR_Ptt
         if (!p.GetInventory().EnumerateInventory(InventoryTraversalType.PREORDER, items))
             return false;
 
+        // Те саме правило, що в сервера (OZR_SpeakRank), і саме тому воно
+        // живе на самій рації, а не тут: іконка, яка світиться там, де
+        // натискання нічого не відкриє, -- це обіцянка, якої ніхто не
+        // виконає. Раніше тут рахувалась будь-яка жива рація, включно з
+        // рюкзачною, і кнопка мовчала при світлі.
+        bool cargo = OZR_Audio.PttFromCargo();
+
         for (int i = 0; i < items.Count(); i++)
         {
             TransmitterBase t = TransmitterBase.Cast(items[i]);
-            if (t && t.OZR_IsPowered() && OZR_ClientGrid.For(t.GetType()))
+            if (!t || !t.OZR_IsPowered() || !OZR_ClientGrid.For(t.GetType()))
+                continue;
+
+            if (t.OZR_SpeakRank(cargo) > 0)
                 return true;
         }
         return false;

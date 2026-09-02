@@ -205,8 +205,12 @@ class OZR_Module : CF_ModuleWorld
             if (st.MirrorPtt)
                 mirror = 1;
 
+            int cargo = 0;
+            if (st.PttFromCargo)
+                cargo = 1;
+
             GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_AUDIO_RES,
-                new Param3<float, float, int>(st.SquelchGain, mirror, st.SquelchRange),
+                new Param4<float, float, int, int>(st.SquelchGain, mirror, st.SquelchRange, cargo),
                 true, sender);
         }
 
@@ -397,8 +401,14 @@ class OZR_Module : CF_ModuleWorld
     // говорить перша ж рація на слоті.
     private TransmitterBase OZR_PickSpeaker(PlayerBase player, array<EntityAI> items)
     {
-        TransmitterBase worn   = null;
-        int             latest = 0;
+        bool cargo = false;
+        OZR_Settings st = OZR_Settings.Get();
+        if (st)
+            cargo = st.PttFromCargo;
+
+        TransmitterBase best     = null;
+        int             bestRank = 0;
+        int             latest   = 0;
 
         for (int i = 0; i < items.Count(); i++)
         {
@@ -406,30 +416,30 @@ class OZR_Module : CF_ModuleWorld
             if (!t || !OZR_Profiles.For(t.GetType()))
                 continue;
 
-            if (!t.GetInventory())
+            int rank = t.OZR_SpeakRank(cargo);
+            if (rank == 0)
                 continue;
 
-            InventoryLocation loc = new InventoryLocation;
-            if (!t.GetInventory().GetCurrentInventoryLocation(loc))
-                continue;
-
-            int kind = loc.GetType();
-
-            if (kind == InventoryLocationType.HANDS)
+            // Руки б'ють усе й закінчують пошук: рація в долоні -- це вже
+            // сказане вголос «говорю в цю».
+            if (rank == 3)
                 return t;
 
-            if (kind != InventoryLocationType.ATTACHMENT)
-                continue;
-
             int held = t.OZR_HeldAt();
-            if (!worn || held > latest)
+
+            // Спершу за місцем, і лише в межах одного місця -- за свіжістю.
+            // Надіта рація б'є ту, що в рюкзаку, навіть якщо рюкзачну
+            // тримали пізніше: місце -- це намір, а час лише розводить
+            // однакові.
+            if (rank > bestRank || (rank == bestRank && held > latest))
             {
-                worn   = t;
-                latest = held;
+                best     = t;
+                bestRank = rank;
+                latest   = held;
             }
         }
 
-        return worn;
+        return best;
     }
 
     void OZR_GridRes(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
@@ -466,15 +476,16 @@ class OZR_Module : CF_ModuleWorld
         if (type != CallType.Client)
             return;
 
-        Param3<float, float, int> p = new Param3<float, float, int>(1.0, 1.0, OZR_Const.SQUELCH_RANGE_DEFAULT);
+        Param4<float, float, int, int> p = new Param4<float, float, int, int>(1.0, 1.0, OZR_Const.SQUELCH_RANGE_DEFAULT, 0);
         if (!ctx.Read(p))
             return;
 
-        OZR_Audio.SetGains(p.param1, p.param2, p.param3);
+        OZR_Audio.SetGains(p.param1, p.param2, p.param3, p.param4);
 
         string got = "audio: squelch x" + p.param1.ToString();
         got += " within " + OZR_Audio.SquelchRung().ToString() + " m";
         got += ", mirror ptt onto the voice key = " + p.param2.ToString();
+        got += ", ptt from cargo = " + p.param4.ToString();
         OZR_Log.Info(got);
     }
 

@@ -36,6 +36,11 @@ class OZR_Audio
     // отриманні, щоб кожен сплеск не питав те саме.
     private static int s_SquelchRung = OZR_Const.SQUELCH_RANGE_DEFAULT;
 
+    // Не про звук, і живе тут лише тому, що їде тим самим пакетом. Клієнту
+    // воно потрібне рівно для іконки: та мусить світитись тоді й тільки
+    // тоді, коли натискання щось відкриє.
+    private static bool s_PttFromCargo = false;
+
     static float SquelchGain()
     {
         return s_SquelchGain;
@@ -56,8 +61,15 @@ class OZR_Audio
         return s_SquelchRung;
     }
 
-    static void SetGains(float squelch, float mirror, int range)
+    static bool PttFromCargo()
     {
+        return s_PttFromCargo;
+    }
+
+    static void SetGains(float squelch, float mirror, int range, int cargo)
+    {
+        s_PttFromCargo = (cargo > 0);
+
         int rung = OZR_Const.SquelchRung(range);
         if (rung != range)
         {

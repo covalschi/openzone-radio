@@ -215,6 +215,37 @@ modded class TransmitterBase
         return m_OZR_HeldAt;
     }
 
+    // Наскільки ця рація «на видноті» -- більше значить ближче до рук.
+    //
+    // Одне місце на обидва боки: сервер вирішує, кого відкрити, а клієнт
+    // малює іконку, і розходження між ними -- це кнопка, яка світиться й
+    // нічого не робить.
+    //
+    // 3 руки, 2 слот, 1 карго, 0 не тут. Карго повертає нуль, коли сервер
+    // його не дозволив: тоді рація в рюкзаку не існує для гашетки взагалі.
+    int OZR_SpeakRank(bool cargoAllowed)
+    {
+        if (!GetInventory())
+            return 0;
+
+        InventoryLocation loc = new InventoryLocation;
+        if (!GetInventory().GetCurrentInventoryLocation(loc))
+            return 0;
+
+        int kind = loc.GetType();
+
+        if (kind == InventoryLocationType.HANDS)
+            return 3;
+
+        if (kind == InventoryLocationType.ATTACHMENT)
+            return 2;
+
+        if (kind == InventoryLocationType.CARGO && cargoAllowed)
+            return 1;
+
+        return 0;
+    }
+
     // Предмет щойно підняли зі збереження -- рушій уже поставив збережений
     // індекс, і про нього теж треба сказати, інакше після рестарту клієнт
     // побачив би не ту частоту, на якій рація насправді стоїть.
