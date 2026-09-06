@@ -183,7 +183,7 @@ class OZR_Module : CF_ModuleWorld
         int   gCount = 0;
         if (even)
         {
-            gBase  = OZR_Grid.MHzAt(0);
+            gBase  = OZR_Grid.Base();
             gStep  = OZR_Grid.StepMHz();
             gCount = OZR_Grid.Count();
         }

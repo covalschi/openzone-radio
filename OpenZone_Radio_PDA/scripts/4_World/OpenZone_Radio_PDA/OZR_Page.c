@@ -70,7 +70,7 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
         // сказати про це щось осмислене).
         if (OZR_Grid.Ready())
         {
-            st.EtherBase = OZR_Grid.MHzAt(0);
+            st.EtherBase = OZR_Grid.Base();
             st.EtherStep = OZR_Grid.StepMHz();
         }
 

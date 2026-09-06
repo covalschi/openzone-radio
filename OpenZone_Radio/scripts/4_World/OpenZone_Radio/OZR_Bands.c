@@ -48,6 +48,7 @@ class OZR_Bands
             OZR_Log.Warn("no " + OZR_Const.BAND_PROBE_CLASS + " to measure the band table on; radio channels stay unavailable");
             if (obj)
                 GetGame().ObjectDelete(obj);
+            OZR_Grid.Recompute();
             return;
         }
 
@@ -86,6 +87,12 @@ class OZR_Bands
         }
 
         GetGame().ObjectDelete(obj);
+
+        // Похідне від таблиці рахується ТУТ і більше ніде: рівномірність,
+        // база й крок за весь запуск не міняються, бо таблицю пише лише ця
+        // функція. Раніше кожен із цих трьох відповідей заново проходив усю
+        // таблицю на кожен тюн, спавн і запит сторінки.
+        OZR_Grid.Recompute();
 
         // Друкуємо КРАЇ, а не всю таблицю. Коли частот було вісім, повний
         // список був найкориснішим, що можна сказати; на тисячі з гаком це
