@@ -5,8 +5,10 @@
 // that name in the game directory is loaded instead. Every export it declares
 // must still resolve, or the server does not start at all.
 //
-// Generated from the export table of the real hid.dll -- regenerate with
-// scratchpad/genforwards.py rather than editing by hand.
+// Generated from the export table of the real hid.dll: take the names from
+// `dumpbin /exports C:\Windows\System32\hid.dll` and wrap each one in the
+// pragma below. The generator that once did it lived in a scratch directory
+// and is gone; naming a script nobody can run is worse than naming the command.
 
 #pragma once
 

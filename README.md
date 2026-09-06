@@ -60,9 +60,19 @@ Holding two keys at once is not the answer either. Give the game's voice input a
 | `UAOZRadioPtt` | End | — |
 
 Now **CapsLock is proximity only** and **End is proximity and radio together**, one key
-each. In the controls screen: bind "Radio: push to talk" to the key you want, then add
-that same key as the alternative binding of "Voice over Network". The two inputs share
-the key and both fire; DayZ allows this, and the pair above was driven on the stand.
+each.
+
+**The mod does this for you.** On the first grid the server sends, the client adds
+your radio key as an *alternative* binding of "Voice over Network" and writes the
+control profile back, once, idempotently — it only ever adds, never clears or
+reassigns, because a mod that rewrites your keys is a mod that will one day erase
+them. Turn it off with `"MirrorPtt": false` in `OZ_Radio_Settings.json`, or if your
+radio key has no binding at all, in which case there is nothing to mirror.
+
+With it off, do it by hand in the controls screen: bind "Radio: push to talk" to the
+key you want, then add that same key as the alternative binding of "Voice over
+Network". The two inputs share the key and both fire; DayZ allows this, and the pair
+above was driven on the stand.
 
 The choice of End is only an example — any free key works. What matters is that the
 radio key carries both inputs and the plain voice key carries only one.
@@ -113,11 +123,18 @@ cd native
 .\build.ps1 -Deploy -GameDir 'C:\path\to\DayZServer'
 ```
 
-Then set the band in `oz_frequencies.json` beside the DLL:
+Then set the band. The file the patch prefers is
+`<profiles>\OpenZone\OZ_Radio_Frequencies.json`, which the mod WRITES ITSELF by
+deriving it from the radio profiles — the lowest bound of any profile, the highest,
+and the greatest common divisor of every step and every offset. `oz_frequencies.json`
+beside the DLL is the fallback, read only when the profile file is missing:
 
 ```json
 { "base_mhz": 136.0, "step_mhz": 0.0125, "count": 1281 }
 ```
+
+Either way the patch reads it at PROCESS start, so a new ether takes effect on the
+next server launch, not on the edit.
 
 It writes `oz_frequencies.log` next to itself on **every** start-up, including the paths
 that patch nothing — a mod that quietly does nothing while looking installed is the
@@ -243,9 +260,7 @@ the whole time.
 - [`native/README.md`](native/README.md) — the library: what it patches, how it finds
   the function, how to build it, what it refuses to do
 - [`docs/engine-frequency-table.md`](docs/engine-frequency-table.md) — what was measured
-  in the binaries
-- [`docs/more-frequencies-plan.md`](docs/more-frequencies-plan.md) — why the design
-  looks like this
+  in the binaries, and why the design looks like this
 - [`docs/workshop-description.md`](docs/workshop-description.md) — the Steam Workshop
   text, English and Ukrainian
 - [`docs/publishing.md`](docs/publishing.md) — what is ready to publish and what still
@@ -254,8 +269,10 @@ the whole time.
 ## Status
 
 The band system, the profiles, push-to-talk and the keypad work. The native patch works
-on a live server: sixteen distinct frequencies where the engine had eight, confirmed
-independently by the mod's own probe driving the engine's API.
+on a live server: the mod's own probe drove the engine's API and measured **5281**
+distinct frequencies from 86 to 152 MHz where the engine had eight (2026-09-02; the
+same probe reads the vanilla eight on an unpatched server, which is how the two states
+are told apart).
 
 **Not yet proven:** that two players eight indices apart are separate *conversations*.
 The frequencies are distinct and the router keys on the frequency's bytes, so the

@@ -84,7 +84,7 @@ Consequence, and it is the important one:
 
 `OZR_Bands.Probe` stops at eight because of its own `hz == first` wrap check, not
 because the engine refused index 8. Its count of eight distinct frequencies is
-correct; the reason it stopped is not what the comment in that file implies.
+correct, and the comment in that file says so.
 
 ## Radio state block
 
@@ -269,6 +269,15 @@ works too, but then a relocated array has to sit within ±2 GB of the image so t
 
 The client's wrong local float is harmless: it only mis-keys an entry in a map
 nothing reads.
+
+**And the patch must gate on `-server`.** A Diag stand runs the client and the
+server out of the same directory and from the same `DayZDiag_x64.exe`, so a proxy
+that does not check the command line patches both — which makes every test
+meaningless, because the whole question is whether a *stock* client works against
+a patched server. `GetCommandLineW()` answers it. (This paragraph and the one
+above are what survived of `docs/more-frequencies-plan.md`, an executed plan
+document deleted 2026-09-06 under the series' rule that plans do not outlive
+their execution.)
 
 ## Still unverified
 

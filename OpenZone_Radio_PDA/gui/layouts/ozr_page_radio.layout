@@ -1,6 +1,8 @@
 // Сторінка «Рація»: стан і книжка ліворуч, настройка праворуч.
 //
-// ЗГЕНЕРОВАНО scratchpad/pagelayout.py -- правити генератор, не це.
+// ГЕНЕРАТОРА БІЛЬШЕ НЕМАЄ. Тут стояло «згенеровано scratchpad/pagelayout.py
+// -- правити генератор, не це», і того скрипта в репозиторії немає: він жив у
+// тимчасовому каталозі й пішов разом із ним. Файл підтримується руками.
 //
 // Списку каналів тут немає: плата налаштовується числом, як і будь-яка
 // рація. А книжка частот -- це імена, які дав САМ ГРАВЕЦЬ, і живуть вони на
@@ -126,7 +128,7 @@ FrameWidgetClass OZ_PageRadio {
    hexactsize 1
    vexactsize 1
    ignorepointer 1
-   text "SAVED ON THE CARRIER"
+   text "#STR_OZR_BOOK_TITLE"
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
    "exact text size" 13
@@ -596,7 +598,7 @@ FrameWidgetClass OZ_PageRadio {
    hexactsize 1
    vexactsize 1
    ignorepointer 1
-   text "pick a saved one on the left to tune to it"
+   text "#STR_OZR_BOOK_HINT"
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
    "exact text size" 13

@@ -23,7 +23,7 @@ class OZRP_Const
     // чекає свого часу. Домовленість -- oz_<мод>_<що>, як і в іменах файлів.
     static const string KIND_FREQS = "oz_radio_frequencies";
 
-    // Скільки коштує запис. Одна частота -- один запис: носій рахує записи й
-    // не питає, що це (див. OZ_CarrierSpec.MaxRecords).
+    // Найдовше ім'я запису в книжці. Одна частота -- один запис: і прилад, і
+    // носій рахують записи й не питають, що це (див. OZ_CarrierSpec.MaxRecords).
     static const int    NAME_MAX = 24;
 }

@@ -28,8 +28,17 @@ cannot be accepted. **GPL code in particular cannot go in.**
   unpacked game scripts. If you are not sure, unpack the PBO and look.
 - **No text in code.** Every user-facing string goes through the stringtable.
   English is the base language.
-- **No hard dependency beyond Community Framework.** Anything else is an optional
-  provider behind an `#ifdef` plus a runtime probe, with a working fallback.
+- **The base pbo depends on Community Framework and nothing else of ours.**
+  Anything that knows about two mods at once lives in a separate glue pbo with a
+  hard `requiredAddons` on both — that is what `@OpenZone_Radio_PDA` and
+  `@OpenZone_Radio_VPP` are. There is no such thing as an optional reference in
+  Enforce: a class from an unloaded mod cannot be named even in a dead branch,
+  and compilation order comes only from `requiredAddons`. So "use it if it is
+  there" is not a thing you can write, and an `#ifdef` plus a runtime probe is
+  advice that sends a contributor to do the impossible. (The one real `#ifdef`
+  in this repository, in the VPP pane, guards on CfgMods class names the engine
+  auto-defines — it decides whether a file compiles at all, not whether a
+  reference resolves.)
 - **Never identify an item by inheritance from our own class.** Item classnames come
   from JSON so that admins can point the mod at items from any mod.
 - Every `.ps1` file must be saved as **UTF-8 with BOM**, or Windows PowerShell 5.1

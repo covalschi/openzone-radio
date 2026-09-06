@@ -1,7 +1,7 @@
 // Рація всередині КПК -- НЕОБОВ'ЯЗКОВИЙ pbo.
 //
 // Що тут і чому саме тут. Плата рації -- це код МОДА РАЦІЇ: скриптовий клас
-// OZ_Module_Radio живе там і не згадує ні КПК, ні ядра. Але його КОНФІГУРАЦIЙНИЙ
+// OZ_Module_Radio живе там і не згадує ні КПК, ні ядра. Але його КОНФІГУРАЦІЙНИЙ
 // запис успадковується від OZ_Module_Base -- класу КПК, -- а це вже жорстка
 // залежність на рівні конфіга, обійти яку нічим. Тому сюди їде рівно вона: те,
 // чим плата ОГОЛОШУЄТЬСЯ модулем відсіку, і те, чим вона в КПК вбудовується --
@@ -55,8 +55,9 @@ class CfgVehicles
 {
     class OZ_Module_Base;
 
-    // The radio board. Turns the PDA into a transceiver; without an antenna it
-    // is deaf and mute, exactly like the transponder.
+    // The radio board. Turns the PDA into a transceiver, and it carries its own
+    // reach: there is no antenna module any more, because an antenna is not a
+    // thing you carry in the bay next to the radio.
     //
     // simulation="itemTransmitter" is the ONE line that matters, and it was
     // expensive to find. The engine picks an entity's native type from this
@@ -77,30 +78,4 @@ class CfgVehicles
         displayName = "$STR_OZR_MOD_RADIO";
         descriptionShort = "$STR_OZR_MOD_RADIO_DESC";
     };
-
-    // Long antenna. Same Kind as the PDA's own stub, only a bigger RangeM --
-    // that is the whole extension mechanism: whichever antenna declares the
-    // larger range wins.
-
-    // ------------------------------------------------------------------
-    // Handheld radios that differ in one number and nothing else.
-    //
-    // `range` is the engine's OWN per-class transmission distance, in metres.
-    // Not invented here: read out of the vanilla configs, where PersonalRadio
-    // declares 5000, BaseRadio 50000 and the megaphone 200. The itemTransmitter
-    // simulation reads it, and these inherit that simulation from PersonalRadio
-    // along with the model, the battery slot and the energy manager -- so one
-    // line per class is genuinely all that changes.
-    //
-    // `inputRange[]` is deliberately left alone. That is how close you must be
-    // for the radio to pick your voice up, per voice level {whisper, talk,
-    // shout}, and moving it together with `range` would make two things change
-    // at once for no reason a player could name or notice.
-    //
-    // The reach is in the display name on purpose. Five radios on one model are
-    // otherwise indistinguishable in the hand, and a tier the player cannot see
-    // is a tier they will assume does not exist.
-    //
-    // None of these spawn as loot by themselves: natural spawning needs entries
-    // in the server's types.xml. Until then they are admin- and trader-placed.
 };

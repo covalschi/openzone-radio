@@ -3,8 +3,7 @@
 // A proxy hid.dll that replaces the engine's frequency lookup so that a tuned
 // index maps to `base + index * step` instead of to one of eight hardcoded
 // values. See ../../docs/engine-frequency-table.md for why that one function is
-// the whole limit, and ../../docs/more-frequencies-plan.md for the plan this
-// implements.
+// the whole limit and why the design looks like this.
 //
 // It patches the SERVER ONLY, on purpose. Client and server are the same
 // executable in the same directory on a Diag stand, so an ungated proxy would

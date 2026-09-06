@@ -4,9 +4,8 @@ A server-side native mod that raises DayZ's eight radio channels to a number set
 in JSON. Loads as a proxy `hid.dll` beside the game executable and replaces the
 one engine function that turns a tuned index into a frequency.
 
-Background: [engine-frequency-table](../docs/engine-frequency-table.md) for what
-was measured in the binaries, [more-frequencies-plan](../docs/more-frequencies-plan.md)
-for why the design looks like this.
+Background: [engine-frequency-table](../docs/engine-frequency-table.md) — what was
+measured in the binaries, and why the design looks like this.
 
 ## What it does
 
