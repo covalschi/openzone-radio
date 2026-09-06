@@ -65,7 +65,11 @@ modded class OZ_VppAdminMenu
             return;
         }
 
-        RegisterPane("radio", "RADIO", pane);
+        // ІМ'Я РЯДКА ПІДКАЗОК НАЗИВАЄМО САМІ. Ядро мало перелік відомих імен
+        // і наше в ньому колись не значилось -- панель тоді викидала кожну
+        // свою підказку мовчки. Перелік лишився запасним ходом; знати імена
+        // віджетів чужого мода ядро не мусить, тож називаємо своє тут.
+        RegisterPane("radio", "RADIO", pane, "RadHint");
     }
 
     override void OnPaneShown(string id)
