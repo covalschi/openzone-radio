@@ -142,7 +142,12 @@ class OZR_Module : CF_ModuleWorld
         if (m_PullsLeft == 0)
             OZR_Log.Warn("the ether never arrived from the server after " + PULL_TRIES.ToString() + " tries - frequencies will show as unknown");
 
-        GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_GRID_REQ, new Param1<int>(OZR_Const.SCHEMA_PROFILES), true);
+        // ПОРОЖНІЙ Param, і саме порожній. CF вимагає якийсь Param, тож він
+        // тут є; але возив він SCHEMA_PROFILES, а обробник на сервері не
+        // читає з контексту жодного байта. Номер схеми на дроті без читача --
+        // це обіцянка узгодження версій, якого немає, і наступний читач цього
+        // коду шукав би, де воно перевіряється. Нуль не обіцяє нічого.
+        GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_GRID_REQ, new Param1<int>(0), true);
     }
 
     // Гравець за особою відправника -- ОДНИМ СТРИБКОМ.
