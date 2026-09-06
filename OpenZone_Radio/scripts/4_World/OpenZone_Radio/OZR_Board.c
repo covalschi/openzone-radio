@@ -67,7 +67,16 @@ class OZ_Module_Radio extends TransmitterBase
     override bool OZR_SetSpeaking(bool on, bool locked)
     {
         bool did = super.OZR_SetSpeaking(on, locked);
-        m_Speaking = did && on;
+
+        // ГІЛКОЮ, А НЕ ЛАНЦЮЖКОМ -- та сама пастка, що й у m_OZR_Latched
+        // поруч: «&&», покладене прямо в поле об'єкта на купі, або псує
+        // купу, або тихо дає false при двох істинних операндах. Тут ціна
+        // брехні -- плата, яка замовкає посеред фрази на наступній звірці
+        // живлення, тобто рівно та вада, заради якої m_Speaking і завели.
+        m_Speaking = false;
+        if (did)
+            m_Speaking = on;
+
         return did;
     }
 

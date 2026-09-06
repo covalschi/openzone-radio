@@ -289,9 +289,13 @@ class OZR_PageRadio : OZ_PdaPage
 
             OZR_RadioState st;
             string err;
+            // Copy() -- поки поля ще читаються правильно. Об'єкт із
+            // завантажувача створив рушій, тож усе, що він не присвоїв,
+            // після першої ж рухомої купи стає сміттям, а тримаємо ми його
+            // секундами. Доказ -- над OZR_RadioState.Copy.
             if (JsonFileLoader<OZR_RadioState>.LoadData(json, st, err) && st)
             {
-                m_State = st;
+                m_State = st.Copy();
                 Paint();
             }
             return;
@@ -309,7 +313,7 @@ class OZR_PageRadio : OZ_PdaPage
             string berr;
             if (JsonFileLoader<OZR_BookList>.LoadData(json, got, berr) && got && got.Items)
             {
-                m_Rows = got;
+                m_Rows = got.Copy();
                 PaintBook();
             }
             return;
@@ -331,7 +335,7 @@ class OZR_PageRadio : OZ_PdaPage
             string cerr;
             if (JsonFileLoader<OZR_BookList>.LoadData(json, chip, cerr) && chip && chip.Items)
             {
-                m_ChipRows = chip;
+                m_ChipRows = chip.Copy();
                 PaintBook();
             }
             return;

@@ -75,10 +75,35 @@ class OZR_Settings : OZR_ConfigBase
         PttFromCargo = true;
     }
 
+    // Копія, зроблена СКРИПТОМ. Доказ -- над OZR_Profiles.Copy; коротко:
+    // об'єкт, який повернув JsonFileLoader, створив РУШІЙ, тож ініціалізатори
+    // полів у ньому не виконувались, а розбір присвоїв лише те, для чого
+    // знайшов значення в файлі. Одразу після розбору решта ще занулена, за
+    // хвилину -- вже чуже сміття. s_Inst живе весь запуск, тому переписуємо.
+    //
+    // НАСЛІДОК, ЯКИЙ ТРЕБА ЗНАТИ: ключ, ЯКОГО В ФАЙЛІ НЕМАЄ, застигає нулем
+    // (для bool -- false), а не тим, що написано в оголошенні поля вище.
+    // Ініціалізатори діють лише там, де об'єкт створює скрипт, тобто у
+    // LoadDefaults для нового файлу. Так було й до копії -- просто далі
+    // значення пливло; тепер воно принаймні не бреше по-різному щохвилини.
+    OZR_Settings Copy()
+    {
+        OZR_Settings c = new OZR_Settings();
+        c.Version      = Version;
+        c.DebugLog     = DebugLog;
+        c.SquelchGain  = SquelchGain;
+        c.MirrorPtt    = MirrorPtt;
+        c.SquelchRange = SquelchRange;
+        c.PttFromCargo = PttFromCargo;
+        return c;
+    }
+
     static void ServerLoad()
     {
-        s_Inst = new OZR_Settings();
-        OZR_ConfigLoader<OZR_Settings>.Load(OZR_Const.SETTINGS, "Radio", s_Inst);
+        OZR_Settings loaded = new OZR_Settings();
+        OZR_ConfigLoader<OZR_Settings>.Load(OZR_Const.SETTINGS, "Radio", loaded);
+
+        s_Inst = loaded.Copy();
         OZR_Log.SetDebug(s_Inst.DebugLog);
     }
 }

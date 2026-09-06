@@ -23,6 +23,20 @@ class OZR_EtherServer
     // заради усунення якої все це й зроблено.
     static void Publish(OZR_Profiles cfg)
     {
+        // ПРОФІЛІ, ЯКИХ АДМІН НЕ ПИСАВ, НЕ ВИВОДЯТЬ ЕФІРУ.
+        //
+        // OZ_Radio_Profiles.json міг не розібратись -- кома не там, редактор
+        // обірвав запис, -- і тоді ми стоїмо на вбудованій драбині, а файл
+        // лишається на диску недоторканим. Вивести сітку з ЦИХ чисел і
+        // покласти її поверх робочого OZ_Radio_Frequencies.json означало б
+        // після одного зіпсованого старту втратити всі власні смуги сервера
+        // мовчки -- і виявилось би це аж наступним рестартом.
+        if (!OZR_Profiles.Writable())
+        {
+            OZR_Log.Warn("ether not derived: the radio profiles on disk did not parse, so we are on built-in defaults - the frequency file is left as it was, fix OZ_Radio_Profiles.json and restart");
+            return;
+        }
+
         array<ref OZR_RadioProfile> radios;
         if (cfg)
             radios = cfg.Radios;

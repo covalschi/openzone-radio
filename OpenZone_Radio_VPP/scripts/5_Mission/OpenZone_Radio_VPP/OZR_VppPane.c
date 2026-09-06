@@ -89,9 +89,13 @@ modded class OZ_VppAdminMenu
         {
             OZR_Profiles c;
             string err;
+            // Copy() -- поки поля ще читаються правильно. Об'єкт створив
+            // рушій (JsonFileLoader -- обгортка над нативним серіалізатором),
+            // тож ініціалізатори полів не виконувались, а вкладка тримає його
+            // всю адмінську сесію. Доказ -- над OZR_Profiles.Copy.
             if (JsonFileLoader<OZR_Profiles>.LoadData(body, c, err) && c)
             {
-                m_RadCfg = c;
+                m_RadCfg = c.Copy();
                 if (!m_RadCfg.Radios)
                     m_RadCfg.Radios = new array<ref OZR_RadioProfile>();
                 m_RadPicked = -1;

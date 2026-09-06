@@ -23,6 +23,19 @@ class OZR_RadioProfile
     // Через скільки МГц крокує ця рація. Мусить бути КРАТНИМ кроку сітки --
     // інакше рація стає між діленнями, і з нею не зійдеться ні з ким.
     float  StepMHz   = 0;
+
+    // Копія, зроблена СКРИПТОМ. Див. довгий доказ над OZR_Profiles.Copy: усе,
+    // що прийшло з JsonFileLoader і живе довше за розбір, мусить бути
+    // переписане в об'єкт, створений через new.
+    OZR_RadioProfile Copy()
+    {
+        OZR_RadioProfile c = new OZR_RadioProfile();
+        c.ClassName = ClassName;
+        c.MinMHz    = MinMHz;
+        c.MaxMHz    = MaxMHz;
+        c.StepMHz   = StepMHz;
+        return c;
+    }
 }
 
 // Куди гравець перетягнув клавіатуру. Клієнтське й тільки клієнтське: сервера

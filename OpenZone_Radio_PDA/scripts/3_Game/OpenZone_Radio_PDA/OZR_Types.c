@@ -52,6 +52,36 @@ class OZR_RadioState
     // немає або він порожній, -- і сторінка розрізняє їх за StoresRecords.
     bool  StoresRecords = false;
     int   FreeCells  = -1;
+
+    // КОПІЯ, ЗРОБЛЕНА СКРИПТОМ, і без неї цей стан не можна тримати.
+    //
+    // JsonFileLoader<T> -- обгортка над нативним JsonSerializer, тож об'єкт
+    // створює РУШІЙ: ані конструктор, ані ініціалізатори полів не
+    // виконуються, а розбір присвоює лише ті члени, для яких знайшов
+    // значення. Одразу після розбору сторінка ще занулена -- тому перші
+    // читання правдиві, -- а коли купа зрушить, те саме поле віддасть чуже
+    // сміття. Сторінка ж тримає стан секундами (Paint, StepFreq, Tune, межі
+    // смуги), тобто далеко за межами цієї миті. Зміряно на стенді фракцій
+    // 2026-09-06: рядок звання читався то "3", то "$", і `!= ""` було
+    // істинним на порожньому.
+    OZR_RadioState Copy()
+    {
+        OZR_RadioState c = new OZR_RadioState();
+        c.HasBoard      = HasBoard;
+        c.Powered       = Powered;
+        c.RangeM        = RangeM;
+        c.Live          = Live;
+        c.Index         = Index;
+        c.FreqMHz       = FreqMHz;
+        c.MinMHz        = MinMHz;
+        c.MaxMHz        = MaxMHz;
+        c.StepMHz       = StepMHz;
+        c.EtherBase     = EtherBase;
+        c.EtherStep     = EtherStep;
+        c.StoresRecords = StoresRecords;
+        c.FreeCells     = FreeCells;
+        return c;
+    }
 }
 
 // Куди настроїти. Ділення, а не ім'я.

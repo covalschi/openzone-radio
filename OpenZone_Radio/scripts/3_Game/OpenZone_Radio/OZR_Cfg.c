@@ -35,12 +35,26 @@ class OZR_ConfigLoader<Class T>
     // "Can't find class T", по парі на кожне інстанціювання. Той самий висновок
     // записаний і в ядрі, і сюди він приїхав удруге, вже своїм коштом.
     // Тому конкретний тип створює викликач, а тут лишається тільки наповнення.
-    static void Load(string path, string tag, inout T cfg, bool backupOnWrite = true)
+    //
+    // ПОВЕРТАЄ, ЧИ МОЖНА ПИСАТИ ПОХІДНЕ ВІД ЦЬОГО ФАЙЛУ. false означає рівно
+    // одне: файл на диску є, ми його не зрозуміли й лишили як є, тобто зараз
+    // працюємо на дефолтах, яких адмін не писав. Викликач, що ігнорує
+    // відповідь, поводиться точно як раніше; той, хто пише щось, ВИВЕДЕНЕ з
+    // прочитаного, мусить її спитати -- інакше один зіпсований старт тихо
+    // затирає роботу адміна (див. OZR_EtherServer.Publish).
+    //
+    // Ядерний OZ_ConfigLoader повертає те саме й з тієї ж причини, але вміє
+    // більше: карантин зіпсованого файлу, .bak і перезапис після починок у
+    // Validate. Ця копія їх не має свідомо -- вона мусить компілюватись без
+    // ядра, -- і різниця записана тут, щоб наступний читач не вважав її
+    // недоглядом.
+    static bool Load(string path, string tag, inout T cfg)
     {
         if (!cfg)
-            return;
+            return false;
 
-        bool fresh = false;
+        bool fresh    = false;
+        bool understood = true;
         string err;
 
         if (!FileExist(path))
@@ -57,6 +71,7 @@ class OZR_ConfigLoader<Class T>
             // знищити роботу й приховати помилку.
             OZR_Log.Error(tag + ": " + path + " does not parse (" + err + ") - using defaults, file left alone");
             cfg.LoadDefaults();
+            understood = false;
         }
         else if (cfg.Version != cfg.LatestVersion())
         {
@@ -65,6 +80,7 @@ class OZR_ConfigLoader<Class T>
             {
                 OZR_Log.Error(tag + ": cannot migrate " + path + " from version " + from.ToString() + " - using defaults, file left alone");
                 cfg.LoadDefaults();
+                understood = false;
             }
             else
             {
@@ -82,6 +98,8 @@ class OZR_ConfigLoader<Class T>
 
         if (fresh)
             Save(path, tag, cfg);
+
+        return understood;
     }
 
     static void Save(string path, string tag, T cfg)

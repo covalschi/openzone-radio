@@ -104,7 +104,7 @@ class OZR_Profiles : OZR_ConfigBase
             return;
         }
 
-        float lo = OZR_Grid.MHzAt(0);
+        float lo = OZR_Grid.Base();
         float hi = OZR_Grid.MHzAt(OZR_Grid.Count() - 1);
 
         // ЩО ТУТ ВИКИДАЄТЬСЯ, А ЩО ЛИШЕ ЗГАДУЄТЬСЯ.
@@ -186,6 +186,39 @@ class OZR_Profiles : OZR_ConfigBase
         }
     }
 
+    // ОБ'ЄКТ ІЗ ЗАВАНТАЖУВАЧА ЖИВЕ РІВНО ДО КІНЦЯ РОЗБОРУ -- далі тільки копія.
+    //
+    // JsonFileLoader<T> -- тонка обгортка над нативним JsonSerializer, тож
+    // об'єкт створює РУШІЙ: ані конструктор, ані ініціалізатори полів
+    // (`= ""`, `= 0`) не виконуються, а сам розбір присвоює лише ті члени, для
+    // яких знайшов значення. Решта лишається тим, що лежало за цим зміщенням.
+    // Одразу після розбору сторінка ще свіжо занулена, тому перші читання
+    // виглядають правильними; за хвилину купа зрушила, і те саме поле віддає
+    // чуже сміття -- при цьому `if (x != "")` на ньому ІСТИННЕ. Зміряно на
+    // стенді фракцій 2026-09-06 (рядок звання читався то "3", то "$").
+    //
+    // s_Inst живе весь запуск сервера, і його поля читає кожен тюн, кожен
+    // спавн і кожен запит сторінки. Тому одразу після Load ми переписуємо
+    // все в об'єкти, створені через new -- один раз, поки числа ще правдиві.
+    OZR_Profiles Copy()
+    {
+        OZR_Profiles c = new OZR_Profiles();
+        c.Version = Version;
+        c.Radios  = new array<ref OZR_RadioProfile>();
+
+        if (!Radios)
+            return c;
+
+        for (int i = 0; i < Radios.Count(); i++)
+        {
+            OZR_RadioProfile p = Radios[i];
+            if (!p)
+                continue;
+            c.Radios.Insert(p.Copy());
+        }
+        return c;
+    }
+
     // Профіль за класнеймом, або порожньо. Порожньо означає «ця рація не наша»
     // -- ванільні й чужі рації лишаються з ванільною поведінкою.
     static OZR_RadioProfile For(string className)
@@ -201,9 +234,26 @@ class OZR_Profiles : OZR_ConfigBase
         return null;
     }
 
+    // Чи можна писати похідне від цього файлу.
+    //
+    // false означає одне: файл на диску є, і ми його НЕ ЗРОЗУМІЛИ, тобто
+    // працюємо на дефолтах, яких адмін не писав. Виводити з них ефір і класти
+    // його поверх робочого OZ_Radio_Frequencies.json -- значить після одного
+    // зіпсованого старту втратити всі власні смуги мовчки. Той самий прапорець
+    // і з тієї ж причини стоїть у ядрі (OZ_Settings.Writable).
+    private static bool s_Writable = true;
+
+    static bool Writable()
+    {
+        return s_Writable;
+    }
+
     static void ServerLoad()
     {
-        s_Inst = new OZR_Profiles();
-        OZR_ConfigLoader<OZR_Profiles>.Load(OZR_Const.PROFILES, "RadioProfiles", s_Inst);
+        OZR_Profiles loaded = new OZR_Profiles();
+        s_Writable = OZR_ConfigLoader<OZR_Profiles>.Load(OZR_Const.PROFILES, "RadioProfiles", loaded);
+
+        // КОПІЯ, поки поля ще читаються правильно -- див. Copy() вище.
+        s_Inst = loaded.Copy();
     }
 }
