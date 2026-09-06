@@ -73,6 +73,11 @@ class OZR_Module : CF_ModuleWorld
         GetRPCManager().AddRPC(OZR_Const.MOD, OZR_Const.RPC_TUNE,     this, SingleplayerExecutionType.Server);
         GetRPCManager().AddRPC(OZR_Const.MOD, OZR_Const.RPC_PTT,      this, SingleplayerExecutionType.Server);
 
+        // ПЕРЕД БУДЬ-ЯКИМ ЗАПИСОМ. Каталог профілю створює лише ядро, а рація
+        // його не вимагає: на сервері з одним нашим pbo кожен Save мовчки
+        // провалювався б, і разом із ним -- публікація сітки частот.
+        OZR_Const.EnsureProfileDir();
+
         // Найперше: рівень діагностики стоїть саме тут, і рядки нижче вже
         // мають на нього зважати.
         OZR_Settings.ServerLoad();

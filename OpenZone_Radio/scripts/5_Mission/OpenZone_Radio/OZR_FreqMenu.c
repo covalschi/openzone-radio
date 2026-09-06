@@ -148,6 +148,11 @@ class OZR_FreqMenu extends UIScriptedMenu
         float x, y;
         m_Card.GetPos(x, y);
 
+        // Каталог профілю на КЛІЄНТІ теж ніхто не створює: ядро тут може бути
+        // відсутнє так само, як на сервері, а без каталогу SaveFile мовчки не
+        // пише -- вікно щоразу поверталось би на середину екрана.
+        OZR_Const.EnsureProfileDir();
+
         OZR_KeypadPos p = new OZR_KeypadPos();
         p.Set = true;
         p.X   = x;
