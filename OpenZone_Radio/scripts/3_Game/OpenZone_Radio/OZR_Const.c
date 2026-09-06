@@ -125,9 +125,11 @@ class OZR_Const
     // при старті процесу -- звідси й відкладеність: новий файл діє з
     // наступного запуску сервера, і про це кажуть вголос.
     //
-    // Ім'я й розташування узгоджені з native/src/dllmain.cpp: він шукає
-    // <profiles>\\OpenZone\\Frequencies.json, а копію поруч із собою лишає
-    // запасною. Перейменувати тут -- значить мовчки повернутись до запасної.
+    // Ім'я й розташування узгоджені з native/src/dllmain.cpp:195: він шукає
+    // <profiles>\\OpenZone\\OZ_Radio_Frequencies.json, а копію поруч із собою
+    // лишає запасною. Голе "Frequencies.json" у спільному каталозі було на
+    // крок від зіткнення з чужим модом, і патч його вже не знає --
+    // перейменувати тут значить мовчки повернутись до запасної.
     static const string FREQUENCIES      = "$profile:OpenZone\\OZ_Radio_Frequencies.json";
     static const int    SCHEMA_PROFILES  = 1;
 
