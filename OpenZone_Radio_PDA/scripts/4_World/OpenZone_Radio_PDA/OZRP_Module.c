@@ -8,8 +8,11 @@
 //   1. рівень діагностики зводиться до ядерного -- один вимикач на всю родину,
 //      коли родина взагалі стоїть;
 //   2. плата оголошується модулем відсіку в договорі заліза КПК;
-//   3. реєструється сторінка «Рація»;
-//   4. вмикається звірка живлення, щоб плата тримала прийом у тон КПК.
+//   3. реєструється її поведінка -- нею приходять вставляння плати й «прилад
+//      працює», тобто те, що раніше добували обходом усіх гравців;
+//   4. реєструється сторінка «Рація»;
+//   5. заводиться звірка -- на єдиний випадок, події для якого немає:
+//      знеструмлений прилад із платою всередині.
 //
 // PTT тут немає: плата -- звичайна профільна рація, і спільний обхід у моді
 // рації відкриває її разом із рештою, хоч вона й лежить усередині КПК.
@@ -21,11 +24,15 @@
 class OZRP_Module : CF_ModuleWorld
 {
     // Прийом тримається в тон живленню КПК поза сторінкою -- рація, яка
-    // починає чути лише коли на неї подивишся, це не рація. Дві секунди --
-    // непомітно для гравця й дешево для сервера: обхід онлайну й нічого
-    // більше.
-    private ref Timer m_SyncTimer;
-    private static const float SYNC_INTERVAL = 2.0;
+    // починає чути лише коли на неї подивишся, це не рація.
+    //
+    // Таймер лишився РІВНО для одного випадку, на який договір заліза КПК
+    // події не дає: прилад знеструмився, а плата лежить у відсіку. Все інше
+    // -- вставляння, вмикання, виймання -- приходить подіями (див. OZR_Set).
+    // Тому й ходить він тепер по реєстру живих плат, а не по всіх гравцях
+    // сервера: у спокої це порожній цикл.
+    private ref Timer m_WakeTimer;
+    private static const float WAKE_INTERVAL = 2.0;
 
     override void OnInit()
     {
@@ -48,13 +55,17 @@ class OZRP_Module : CF_ModuleWorld
 
         OZR_Hardware.Declare();
 
+        // Поведінка плати: вставляння й «прилад працює» приходять звідси, а
+        // не з обходу онлайну.
+        OZ_PdaModules.Register(new OZR_BoardBehaviour());
+
         OZ_PageRegistry.Register(OZRP_Const.PAGE_RADIO,
                                  "#STR_OZR_PAGE_RADIO",
                                  "set:oz_pda image:radio",
                                  new OZ_PdaHandlerRadio());
 
-        m_SyncTimer = new Timer(CALL_CATEGORY_SYSTEM);
-        m_SyncTimer.Run(SYNC_INTERVAL, this, "SyncTick", NULL, true);
+        m_WakeTimer = new Timer(CALL_CATEGORY_SYSTEM);
+        m_WakeTimer.Run(WAKE_INTERVAL, this, "WakeTick", NULL, true);
 
         OZR_Log.Info("radio in the pda: modules=" + OZR_Hardware.Count().ToString());
     }
@@ -63,13 +74,13 @@ class OZRP_Module : CF_ModuleWorld
     {
         super.OnMissionFinish(sender, args);
 
-        if (m_SyncTimer)
-            m_SyncTimer.Stop();
+        if (m_WakeTimer)
+            m_WakeTimer.Stop();
     }
 
     // Кличеться таймером на ім'я -- метод мусить бути видимим (не private).
-    void SyncTick()
+    void WakeTick()
     {
-        OZR_Set.Sync();
+        OZR_Set.Sweep();
     }
 }

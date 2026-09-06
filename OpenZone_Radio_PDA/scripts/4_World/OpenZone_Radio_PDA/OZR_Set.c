@@ -5,6 +5,30 @@
 // плата прокидається там, де стояла. Ім'я каналу знаходимо назад по смузі.
 // Друга таблиця «хто на чому» неминуче розійшлася б із першою -- а розійшовшись,
 // показувала б гравцеві не той ефір, у якому він насправді сидить.
+//
+// ЖИВЛЕННЯ ПЛАТИ ЗВІРЯЄТЬСЯ ПОДІЯМИ, А НЕ ОБХОДОМ ОНЛАЙНУ.
+//
+// Було: раз на дві секунди пройти ВСІХ гравців на сервері, у кожного знайти
+// КПК обходом інвентаря, у КПК знайти плату -- і безумовно смикнути три
+// нативні перемикачі, навіть коли не змінилось нічого. Ціна росла з
+// населенням сервера, а не з кількістю рацій, і власний скіл серії називав
+// цей тик найбільшою паразитною нагрузкою у всій родині.
+//
+// Стало -- три джерела, кожне точне:
+//
+//   1. ВСТАВИЛИ ПЛАТУ. Договір заліза КПК дає OnAttached; будимо одразу.
+//   2. ПРИЛАД УВІМКНУЛИ. Окремої події договір не дає, зате тік поведінки
+//      КПК заводить рівно на час, поки прилад ПРАЦЮЄ (OZ_PDA_Base
+//      .ArmModuleTicks на OnWorkStart, StopModuleTicks на OnWorkStop). Тобто
+//      сам факт тіка -- і є «прилад живий», і будити на ньому дешево: три
+//      нативні ЧИТАННЯ й жодного запису, поки нічого не змінилось.
+//   3. ПЛАТУ ВИЙНЯЛИ. Плата гасне сама, у своєму EEItemLocationChanged
+//      (OZR_Board.c) -- КПК їй для цього не потрібен.
+//
+// Лишається один випадок, на який події немає ВЗАГАЛІ: прилад знеструмився, а
+// плата лежить у відсіку. Зупинку тіка спостерігати нема чим, тож звірка
+// збереглась -- але дивиться вона на РЕЄСТР ЖИВИХ ПЛАТ (їх одиниці), а не на
+// весь онлайн.
 
 class OZR_Set
 {
@@ -42,50 +66,162 @@ class OZR_Set
         return null;
     }
 
-    // Найдальша антена з усіх вставлених. Те саме правило, що й у карти:
-    // перемагає та, що оголосила більший RangeM.
     // Дальність плати -- з ЇЇ ВЛАСНОГО конфіга, як у будь-якої рації.
     //
     // Окремого модуля антени більше немає, і зникнення це не втрата, а
     // виправлення поняття: плата -- це рація, а антена в рації не окрема річ,
     // яку носять у сусідньому відсіку. Хто хоче дістати далі -- ставить іншу
     // плату, рівно як інший гравець бере іншу ручну рацію.
+    //
+    // ЧИТАЄТЬСЯ ОДИН РАЗ НА КЛАС. `range` живе в CfgVehicles і за запуск
+    // сервера не міняється (ConfigSet у грі немає взагалі -- про це й вкладка
+    // VPP каже вголос), а ходити по дереву конфігу на кожну відповідь
+    // сторінки означало б платити за незмінне.
+    private static ref map<string, float> s_Range;
+
     static float RangeOf(OZ_Module_Radio board)
     {
         if (!board)
             return 0;
 
-        string path = "CfgVehicles " + board.GetType() + " range";
-        if (!GetGame().ConfigIsExisting(path))
-            return 0;
+        if (!s_Range)
+            s_Range = new map<string, float>();
 
-        return GetGame().ConfigGetFloat(path);
+        string cls = board.GetType();
+        float have;
+        if (s_Range.Find(cls, have))
+            return have;
+
+        float r = 0;
+        string path = "CfgVehicles " + cls + " range";
+        if (GetGame().ConfigIsExisting(path))
+            r = GetGame().ConfigGetFloat(path);
+
+        s_Range.Insert(cls, r);
+        return r;
     }
 
-    static void Sync()
+    // Плата цього приладу -- у тон приладу. Живлення плати -- живлення КПК, і
+    // більше нічого: своєї батареї в неї немає, а дальність тепер її власна й
+    // від відсіків не залежить.
+    static void WakeIn(OZ_PDA_Base pda)
     {
-        array<Man> players = new array<Man>();
-        GetGame().GetPlayers(players);
+        if (!pda)
+            return;
 
-        for (int i = 0; i < players.Count(); i++)
+        OZ_Module_Radio board = BoardIn(pda);
+        if (!board)
+            return;
+
+        board.OZR_Wake(pda.OZ_IsOn());
+    }
+
+    // ЄДИНЕ, ЩО ЛИШИЛОСЬ ВІД ОБХОДУ: знеструмлений прилад із платою всередині.
+    //
+    // Ходимо по реєстру живих плат, а не по гравцях. Плата тримає посилання на
+    // себе рівно поки МИ її ввімкнули, тож у спокої цей цикл не робить нічого,
+    // а на сервері без жодної живої плати -- не робить нічого взагалі.
+    static void Sweep()
+    {
+        array<OZ_Module_Radio> live = OZ_Module_Radio.OZR_LiveBoards();
+
+        // З КІНЦЯ: OZR_Wake(false) знімає плату з цього ж списку.
+        for (int i = live.Count() - 1; i >= 0; i--)
         {
-            PlayerBase p = PlayerBase.Cast(players[i]);
-            if (!p || !p.GetIdentity())
-                continue;
-
-            OZ_PDA_Base pda = OZ_PdaLookup.HeldBy(p.GetIdentity());
-            if (!pda)
-                continue;
-
-            OZ_Module_Radio board = BoardIn(pda);
+            OZ_Module_Radio board = live[i];
             if (!board)
+            {
+                live.Remove(i);
                 continue;
+            }
 
-            // Живлення плати -- живлення КПК, і більше нічого: своєї батареї
-            // в неї немає, а дальність тепер її власна й від відсіків не
-            // залежить.
-            bool live = pda.OZ_IsOn();
-            board.OZR_Wake(live);
+            // Батько плати -- сам прилад. Не той батько (плату переклали) або
+            // знеструмлений -- обидва означають одне: гасимо.
+            bool on = false;
+            OZ_PDA_Base pda = OZ_PDA_Base.Cast(board.GetHierarchyParent());
+            if (pda)
+                on = pda.OZ_IsOn();
+
+            if (!on)
+                board.OZR_Wake(false);
         }
+
+        Report(live.Count());
+    }
+
+    // Один рядок на хвилину рівнем Dbg -- і рівно ті числа, якими цей шлях
+    // міряють: скільки разів звірка ходила, скільки плат живих і скільки
+    // НАТИВНИХ перемикань мод справді зробив. У спокої останнє -- нуль, і
+    // саме це відрізняє подієву модель від опитування.
+    private static int s_Sweeps  = 0;
+    private static int s_ReportAt = 0;
+    private static int s_WasNatives = 0;
+
+    private static void Report(int liveCount)
+    {
+        s_Sweeps++;
+
+        int now = GetGame().GetTime();
+        if (s_ReportAt == 0)
+        {
+            s_ReportAt   = now;
+            s_WasNatives = OZ_Module_Radio.OZR_NativeCalls();
+            return;
+        }
+
+        if (now - s_ReportAt < 60000)
+            return;
+
+        int natives = OZ_Module_Radio.OZR_NativeCalls() - s_WasNatives;
+
+        string line = "board wake: " + s_Sweeps.ToString() + " sweep(s), ";
+        line += liveCount.ToString() + " live board(s), ";
+        line += natives.ToString() + " native call(s) in the last minute";
+        OZR_Log.Dbg(line);
+
+        s_Sweeps     = 0;
+        s_ReportAt   = now;
+        s_WasNatives = OZ_Module_Radio.OZR_NativeCalls();
+    }
+}
+
+// Поведінка плати в договорі КПК.
+//
+// Дає рівно дві події, яких інакше немає: «вставили» і «прилад працює». Тік
+// свідомо не робить нічого, крім звірки одного приладу: рішення, чи плата має
+// звучати, приймає сам прилад своїм живленням, а наша справа -- не розійтись
+// із ним.
+class OZR_BoardBehaviour : OZ_ModuleBehaviour
+{
+    override string Kind()
+    {
+        return OZRP_Const.MOD_RADIO;
+    }
+
+    override string Owner()
+    {
+        return "OpenZone_Radio_PDA";
+    }
+
+    // ДВІ СЕКУНДИ -- те саме число, що й у знятого обходу, і взяте воно з тієї
+    // ж причини: стільки гравець згоден чекати, поки ввімкнений прилад почне
+    // чути. Іншого сигналу про вмикання договір не дає -- КПК заводить тік на
+    // OnWorkStart і зупиняє на OnWorkStop, тож перший тік і є «прилад ожив».
+    //
+    // Ціна тепер зовсім інша: тік крутиться лише в приладів, які УВІМКНЕНІ й
+    // мають плату, а сама робота -- три нативні читання без жодного запису.
+    override float TickSeconds()
+    {
+        return 2.0;
+    }
+
+    override void OnAttached(ItemBase pda, int slotIndex)
+    {
+        OZR_Set.WakeIn(OZ_PDA_Base.Cast(pda));
+    }
+
+    override void OnTick(ItemBase pda, Man owner, float deltaSeconds)
+    {
+        OZR_Set.WakeIn(OZ_PDA_Base.Cast(pda));
     }
 }

@@ -23,9 +23,80 @@ class OZ_Module_Radio extends TransmitterBase
     override void OnWorkStop()  { }
 
     // Чи тримають зараз PTT. Тримаємо ЦЕ, а не питаємо рушій: живлення
-    // звіряється кожні дві секунди, і без власної пам'яті та звірка або
-    // затикала б людину посеред фрази, або лишала б рот відкритим.
+    // звіряється подіями, і без власної пам'яті звірка або затикала б людину
+    // посеред фрази, або лишала б рот відкритим.
     private bool m_Speaking;
+
+    // ПЛАТИ, ЯКІ ЦЕЙ МОД УВІМКНУВ. Реєстр живих, а не всіх.
+    //
+    // Потрібен рівно для одного питання, на яке подій НЕ БУВАЄ: КПК
+    // знеструмився, а плата лишилась у відсіку. Договір заліза КПК дає
+    // вставляння, виймання й тік «поки прилад працює» -- і жодного слова про
+    // те, що прилад працювати перестав (тік просто зупиняється, а зупинку
+    // спостерігати нема чим). Тому звірка лишається, але дивиться вона на
+    // цей список, а не на весь онлайн: живих плат на сервері одиниці, тоді як
+    // гравців сотні.
+    //
+    // Посилання СЛАБКІ (array без ref): реєстр не має продовжувати життя
+    // предмета. Знятись із нього -- обов'язок самої плати, і робиться це і в
+    // OZR_Wake(false), і в EEDelete, як у ванільного Land_Underground_Panel.
+    private static ref array<OZ_Module_Radio> s_Live;
+
+    static array<OZ_Module_Radio> OZR_LiveBoards()
+    {
+        if (!s_Live)
+            s_Live = new array<OZ_Module_Radio>();
+        return s_Live;
+    }
+
+    // Скільки нативних перемикань цей мод справді зробив. Лічильник, а не
+    // рядок на кожен виклик: питання «чи мовчить цей шлях у спокої» має
+    // числову відповідь, і саме її забирає звірка раз на хвилину.
+    private static int s_Natives = 0;
+
+    static int OZR_NativeCalls()
+    {
+        return s_Natives;
+    }
+
+    override void EEDelete(EntityAI parent)
+    {
+        OZR_Forget();
+        super.EEDelete(parent);
+    }
+
+    private void OZR_Remember()
+    {
+        array<OZ_Module_Radio> live = OZR_LiveBoards();
+        if (live.Find(this) < 0)
+            live.Insert(this);
+    }
+
+    private void OZR_Forget()
+    {
+        if (!s_Live)
+            return;
+
+        int at = s_Live.Find(this);
+        if (at >= 0)
+            s_Live.Remove(at);
+    }
+
+    // Плата пішла з відсіку -- мовчить одразу, не чекаючи звірки.
+    //
+    // Про КПК тут не сказано жодного слова навмисно: мод рації про нього не
+    // знає. Достатньо факту «я більше не причеплена»: рація, яка лежить у
+    // рюкзаку сама по собі, живлення не має нізвідки.
+    override void EEItemLocationChanged(notnull InventoryLocation oldLoc, notnull InventoryLocation newLoc)
+    {
+        super.EEItemLocationChanged(oldLoc, newLoc);
+
+        if (!GetGame() || !GetGame().IsServer())
+            return;
+
+        if (newLoc.GetType() != InventoryLocationType.ATTACHMENT)
+            OZR_Wake(false);
+    }
 
     // Приймач вмикається разом із живленням КПК і слухає постійно.
     // Передавач -- лише поки тримають PTT.
@@ -34,10 +105,24 @@ class OZ_Module_Radio extends TransmitterBase
     // сама починає віщати -- зміряно на стенді, де КПК показував ON AIR, хоч
     // клавіші ніхто не торкався. Рація, яка передає все, що ти кажеш, поки ти
     // цього не просив, видає своїх власників швидше за будь-яку засідку.
+    //
+    // ПИТАЄМО, ПЕРШ НІЖ ПИСАТИ. Раніше всі три нативні виклики йшли
+    // безумовно, і на звірці раз на дві секунди це були три записи в рушій на
+    // кожну плату за тик -- при тому, що змінюється тут майже ніколи нічого.
+    // Тепер виклик робиться лише на РІЗНИЦІ, і лічильник вище рахує саме їх.
     void OZR_Wake(bool on)
     {
-        SwitchOn(on);
-        EnableReceive(on);
+        if (IsOn() != on)
+        {
+            SwitchOn(on);
+            s_Natives++;
+        }
+
+        if (IsReceiving() != on)
+        {
+            EnableReceive(on);
+            s_Natives++;
+        }
 
         // Знеструмлений КПК закриває рот тим самим шляхом, що й клавіша: так
         // синхрозмінна ефіру й защіпка гаснуть разом із рушійним бітом.
@@ -46,15 +131,29 @@ class OZ_Module_Radio extends TransmitterBase
             if (m_Speaking)
                 OZR_SetSpeaking(false, false);
             m_Speaking = false;
-            EnableBroadcast(false);
+
+            if (IsBroadcasting())
+            {
+                EnableBroadcast(false);
+                s_Natives++;
+            }
+
+            OZR_Forget();
             return;
         }
 
-        EnableBroadcast(m_Speaking);
+        if (IsBroadcasting() != m_Speaking)
+        {
+            EnableBroadcast(m_Speaking);
+            s_Natives++;
 
-        // Рядок лише поки говорять: саме цей тик до D96 закривав ефір мовчки.
-        if (m_Speaking)
-            OZR_Log.Dbg("board: power tick while speaking - air kept open, broadcasting=" + IsBroadcasting().ToString());
+            // Рядок лише на КРАЮ й лише поки говорять: саме цей шлях до D96
+            // закривав ефір мовчки.
+            if (m_Speaking)
+                OZR_Log.Dbg("board: air re-opened by the power check - broadcasting=" + IsBroadcasting().ToString());
+        }
+
+        OZR_Remember();
     }
 
     // ЄДИНИЙ вхід для «говорити» -- той самий, що в ручної рації (D96).
