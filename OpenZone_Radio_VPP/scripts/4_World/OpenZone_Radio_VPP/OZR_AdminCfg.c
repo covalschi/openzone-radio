@@ -24,6 +24,33 @@ class OZR_ProfilesApplier : OZ_AdminCfgApplier
             return false;
         }
 
+        // КОПІЯ ОДРАЗУ ПІСЛЯ РОЗБОРУ, ПОКИ ЧИТАННЯ ЩЕ ЧЕСНЕ.
+        //
+        // tmp виділив рушій цілком -- і корінь, і кожен елемент масиву:
+        // локал оголошено без new, тож жоден ініціалізатор поля не
+        // виконувався, а розбір присвоїв лише те, для чого знайшов значення.
+        // Правило -- не «в тому самому виклику», а ДО НАСТУПНОГО ВИДІЛЕННЯ, а
+        // нижче заводиться array<string> і на кожному кроці склеюються рядки
+        // попереджень. Тобто p.Problem() читав би вже зрушену купу -- і межа
+        // довіри пропускала б або відкидала файл за чужими байтами.
+        //
+        // Порожній елемент шукаємо ДО копії: Copy() такі елементи викидає
+        // (саме це робить OZR_Ether.Derive безпечним), а межа довіри мусить
+        // ВІДМОВИТИ файлові, а не тихо стерти з нього рядок. Цей цикл нічого
+        // не виділяє, поки не знайшов порожній, -- а знайшовши, виходить.
+        if (tmp.Radios)
+        {
+            for (int e = 0; e < tmp.Radios.Count(); e++)
+            {
+                if (tmp.Radios[e])
+                    continue;
+
+                OZR_Log.Warn("admin: RadioProfiles.json rejected: entry " + e.ToString() + " is empty");
+                return false;
+            }
+        }
+        tmp = tmp.Copy();
+
         // ТОЙ САМИЙ ПРЕДИКАТ, ЩО Й СКРІЗЬ -- OZR_RadioProfile.Problem.
         //
         // Тут стояв власний, третій за рахунком набір перевірок, і він уже
@@ -36,38 +63,34 @@ class OZR_ProfilesApplier : OZ_AdminCfgApplier
         //
         // ВІДМОВЛЯЄМО ЦІЛКОМ, а не пропускаємо поганий рядок: адмін мусить
         // побачити відмову, а не тихо втратити один профіль із набору.
-        if (tmp.Radios)
+        //
+        // Перевірки на порожній масив тут більше немає: Copy() заводить його
+        // сам, тож після копії Radios є завжди, хай і порожній.
+        //
+        // Без ref: масив-локал і так володіє тим, що тримає, а `ref` на
+        // локалі -- зміряна пастка (сервер падав у чужій функції).
+        array<string> seen = new array<string>();
+
+        for (int i = 0; i < tmp.Radios.Count(); i++)
         {
-            // Без ref: масив-локал і так володіє тим, що тримає, а `ref` на
-            // локалі -- зміряна пастка (сервер падав у чужій функції).
-            array<string> seen = new array<string>();
+            OZR_RadioProfile p = tmp.Radios[i];
 
-            for (int i = 0; i < tmp.Radios.Count(); i++)
+            string bad = p.Problem();
+            if (bad != "")
             {
-                OZR_RadioProfile p = tmp.Radios[i];
-                if (!p)
-                {
-                    OZR_Log.Warn("admin: RadioProfiles.json rejected: entry " + i.ToString() + " is empty");
-                    return false;
-                }
-
-                string bad = p.Problem();
-                if (bad != "")
-                {
-                    OZR_Log.Warn("admin: RadioProfiles.json rejected: " + p.Named() + " " + bad);
-                    return false;
-                }
-
-                // Два профілі на один клас -- це не помилка формату, а
-                // питання без відповіді: OZR_Profiles.For віддає перший, і
-                // другий не робить нічого мовчки.
-                if (seen.Find(p.ClassName) >= 0)
-                {
-                    OZR_Log.Warn("admin: RadioProfiles.json rejected: " + p.ClassName + " is listed twice");
-                    return false;
-                }
-                seen.Insert(p.ClassName);
+                OZR_Log.Warn("admin: RadioProfiles.json rejected: " + p.Named() + " " + bad);
+                return false;
             }
+
+            // Два профілі на один клас -- це не помилка формату, а питання
+            // без відповіді: OZR_Profiles.For віддає перший, і другий не
+            // робить нічого мовчки.
+            if (seen.Find(p.ClassName) >= 0)
+            {
+                OZR_Log.Warn("admin: RadioProfiles.json rejected: " + p.ClassName + " is listed twice");
+                return false;
+            }
+            seen.Insert(p.ClassName);
         }
 
         OZR_ConfigLoader<OZR_Profiles>.Save(OZR_Const.PROFILES, "RadioProfiles", tmp);

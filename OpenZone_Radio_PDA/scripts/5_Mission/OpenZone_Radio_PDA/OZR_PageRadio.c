@@ -377,6 +377,11 @@ class OZR_PageRadio : OZ_PdaPage
             string line = "";
             if (JsonFileLoader<OZR_ChipReport>.LoadData(json, rep, rerr) && rep)
             {
+                // Копія ДО наступного виділення: між розбором і читанням
+                // Taken/Total стоять два пошуки в таблиці рядків, а кожен
+                // будує рядок. Доказ -- над OZR_ChipReport.Copy.
+                rep = rep.Copy();
+
                 if (op == "chip_write")
                     line = T("STR_OZR_CHIP_WROTE");
                 else

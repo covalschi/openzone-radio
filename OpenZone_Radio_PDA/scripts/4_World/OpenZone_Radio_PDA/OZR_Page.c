@@ -228,6 +228,10 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
             error = "STR_OZ_ERR_INTERNAL";
             return "";
         }
+        // Копія ДО наступного виділення, а не «в тому самому виклику»:
+        // r.Index читається аж після Ready() (обхід інвентаря), OZR_Profiles
+        // .For і OZR_Grid.Window. Доказ -- над OZR_TuneRef.Copy.
+        r = r.Copy();
 
         OZ_PDA_Base pda;
         OZ_Module_Radio board;
@@ -439,6 +443,9 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
             error = "STR_OZ_ERR_INTERNAL";
             return "";
         }
+        // Копія ДО наступного виділення: r.Name читається після Ready(), а
+        // той шукає прилад обходом інвентаря. Доказ -- над OZR_FreqEntry.Copy.
+        r = r.Copy();
 
         OZ_PDA_Base pda;
         OZ_Module_Radio board;
@@ -500,6 +507,11 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
             error = "STR_OZ_ERR_INTERNAL";
             return "";
         }
+        // НАЙГІРШИЙ ІЗ ЦИХ ВИПАДКІВ, І ТОМУ ТУТ ЖЕ. Між розбором прохання й
+        // порівнянням r.Name розбирається ВСЯ книжка приладу -- новий
+        // OZR_FreqBook і по OZR_FreqEntry на кожен запис. Без копії стирали б
+        // не той рядок або не стирали жодного, і в лозі про це ні слова.
+        r = r.Copy();
 
         OZ_PDA_Base pda = OZ_PdaLookup.HeldBy(sender);
         if (!pda)
@@ -649,6 +661,9 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
             error = "STR_OZ_ERR_INTERNAL";
             return "";
         }
+        // Копія ДО наступного виділення: r.Index читається аж після того, як
+        // знайдено носія, знайдено прилад і РОЗІБРАНО книжку чипа.
+        r = r.Copy();
 
         OZ_DataCarrier_Base c = OZ_CarrierOps.Resolve(sender, error);
         if (!c)
