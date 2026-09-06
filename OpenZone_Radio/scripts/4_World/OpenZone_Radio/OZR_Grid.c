@@ -151,12 +151,7 @@ class OZR_Grid
         if (hi <= lo)
             return false;
 
-        float gs = StepMHz();
-        if (gs > 0)
-            stride = Math.Round(p.StepMHz / gs);
-        if (stride < 1)
-            stride = 1;
-
+        stride = OZR_Chan.Stride(p.StepMHz, s_Step);
         return true;
     }
 }

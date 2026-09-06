@@ -39,10 +39,18 @@ class OZR_FreqMenu extends UIScriptedMenu
     {
         layoutRoot = GetGame().GetWorkspace().CreateWidgets("OpenZone_Radio/gui/layouts/ozr_freq.layout");
 
+        // ВИХОДИМО, а не тільки скаржимось. Тут ішли чотири FindAnyWidget
+        // одразу після рядка «розкладка не дала жодного віджета» -- тобто
+        // розіменування null на клієнті при будь-якій біді з ozr_freq.layout
+        // (зниклий файл, перейменований, pbo без gui/). Викликач
+        // (OZR_FreqInput.Open) порожнє вже вміє читати.
         if (!layoutRoot)
+        {
             OZR_Log.Error("freq keypad: the layout produced no widgets");
-        else
-            OZR_Log.Dbg("freq keypad: layout built");
+            return null;
+        }
+
+        OZR_Log.Dbg("freq keypad: layout built");
 
         m_Card  = layoutRoot;
         m_Title = TextWidget.Cast(layoutRoot.FindAnyWidget("TitleText"));
@@ -121,18 +129,42 @@ class OZR_FreqMenu extends UIScriptedMenu
 
     // Куди поставити картку: туди, куди її перетягнули востаннє, а якщо ще
     // нікуди -- по центру.
+    // Позиція картки -- ОДИН РАЗ ЗА СЕСІЮ з диска, далі з пам'яті.
+    //
+    // Файл читався на кожне відкриття вікна й переписувався на кожне
+    // відпускання миші, хоч у ньому пара float, яку ми ж і поклали.
+    // Синхронний файловий ввід-вивід у кадрі відкриття меню -- не те, за що
+    // варто платити двічі.
+    private static ref OZR_KeypadPos s_Pos;
+    private static bool s_PosRead = false;
+
     private void Place()
     {
         if (!m_Card)
             return;
 
-        // LoadFile віддає ще й текст помилки -- третій параметр обов'язковий.
-        // Відсутній файл тут не помилка, а перший запуск, тож мовчимо.
-        OZR_KeypadPos saved;
-        string err;
-        if (JsonFileLoader<OZR_KeypadPos>.LoadFile(OZR_Const.KEYPAD_POS, saved, err) && saved && saved.Set)
+        if (!s_PosRead)
         {
-            m_Card.SetPos(saved.X, saved.Y);
+            s_PosRead = true;
+
+            // LoadFile віддає ще й текст помилки -- третій параметр
+            // обов'язковий. Відсутній файл тут не помилка, а перший запуск,
+            // тож мовчимо. Копіюємо в СВІЙ об'єкт: те, що повернув
+            // завантажувач, створив рушій, і жити довше за цей виклик воно не
+            // мусить (доказ -- над OZR_Profiles.Copy).
+            OZR_KeypadPos saved;
+            string err;
+            if (JsonFileLoader<OZR_KeypadPos>.LoadFile(OZR_Const.KEYPAD_POS, saved, err) && saved)
+            {
+                s_Pos   = new OZR_KeypadPos();
+                s_Pos.X = saved.X;
+                s_Pos.Y = saved.Y;
+            }
+        }
+
+        if (s_Pos)
+        {
+            m_Card.SetPos(s_Pos.X, s_Pos.Y);
             Clamp();
             return;
         }
@@ -148,18 +180,28 @@ class OZR_FreqMenu extends UIScriptedMenu
         float x, y;
         m_Card.GetPos(x, y);
 
+        // Не зрушили -- не пишемо. Відпускання миші без перетягування трапляється
+        // частіше за саме перетягування.
+        if (s_Pos && s_Pos.X == x && s_Pos.Y == y)
+            return;
+
         // Каталог профілю на КЛІЄНТІ теж ніхто не створює: ядро тут може бути
         // відсутнє так само, як на сервері, а без каталогу SaveFile мовчки не
         // пише -- вікно щоразу поверталось би на середину екрана.
         OZR_Const.EnsureProfileDir();
 
         OZR_KeypadPos p = new OZR_KeypadPos();
-        p.Set = true;
-        p.X   = x;
-        p.Y   = y;
+        p.X = x;
+        p.Y = y;
+
         string err;
         if (!JsonFileLoader<OZR_KeypadPos>.SaveFile(OZR_Const.KEYPAD_POS, p, err))
+        {
             OZR_Log.Warn("keypad position not saved: " + err);
+            return;
+        }
+
+        s_Pos = p;
     }
 
     // Не даємо картці піти за край: вікно, за яке більше не вхопитись, --
@@ -173,12 +215,7 @@ class OZR_FreqMenu extends UIScriptedMenu
         int sw, sh;
         GetScreenSize(sw, sh);
 
-        if (x < 0) x = 0;
-        if (y < 0) y = 0;
-        if (x > sw - cw) x = sw - cw;
-        if (y > sh - ch) y = sh - ch;
-
-        m_Card.SetPos(x, y);
+        m_Card.SetPos(Math.Clamp(x, 0, sw - cw), Math.Clamp(y, 0, sh - ch));
     }
 
     // Картку центрує скрипт, а не розкладка: вирівнювання по екрану залежить
@@ -215,11 +252,6 @@ class OZR_FreqMenu extends UIScriptedMenu
             return;
 
         m_Profile = OZR_ClientGrid.For(m_Radio.GetType());
-    }
-
-    static bool CanOpen()
-    {
-        return WhyNotOpen() == "";
     }
 
     // Чому не відкриється -- словами, і порожній рядок означає «відкриється».
@@ -317,11 +349,6 @@ class OZR_FreqMenu extends UIScriptedMenu
 
         string name = w.GetName();
 
-        // Тимчасова діагностика: чи доходить клік і під яким іменем. Оглядом
-        // розкладки й обробника причину знайти не вдалося, а здогадуватись
-        // удруге про те саме -- марна трата вечора.
-        OZR_Log.Dbg("freq keypad: click on \"" + name + "\"");
-
         // Закриття мусить жити ВСЕРЕДИНІ меню. Клавіша-перемикач цього не
         // може: поки меню відкрите, DayZ глушить інпути, і та сама клавіша
         // більше не спрацьовує -- перевірено на стенді, разом із Back на
@@ -407,12 +434,16 @@ class OZR_FreqMenu extends UIScriptedMenu
             return;
         }
 
-        float mhz = m_Typed.ToFloat();
-        int   idx = OZR_ClientGrid.IndexOf(mhz);
+        int lo;
+        int hi;
+        int stride;
+        if (!OZR_ClientGrid.Window(m_Profile, lo, hi, stride))
+        {
+            OZR_Log.Dbg("freq keypad: commit ignored - this set does not overlap the ether");
+            return;
+        }
 
-        int lo = OZR_ClientGrid.IndexOf(m_Profile.MinMHz);
-        int hi = OZR_ClientGrid.IndexOf(m_Profile.MaxMHz);
-
+        int idx = OZR_ClientGrid.IndexOf(m_Typed.ToFloat());
         if (idx < lo || idx > hi)
         {
             OZR_Log.Dbg("freq keypad: commit refused - " + m_Typed + " is outside this set's band");
@@ -422,18 +453,7 @@ class OZR_FreqMenu extends UIScriptedMenu
             return;
         }
 
-        // Прилипаємо до найближчого СВОГО каналу, а не відмовляємо: гравець
-        // набрав 145.13, а рація крокує по 0.05 -- він мав на увазі 145.15, і
-        // сказати йому «ні» замість того, щоб довести, це вередливість.
-        int   stride = OZR_Stride();
-        float rel    = idx - lo;
-        float st     = stride;
-        int   k      = Math.Round(rel / st);
-        idx          = lo + k * stride;
-        if (idx > hi)
-            idx = hi;
-
-        Send(idx);
+        Send(OZR_Chan.Snap(idx, lo, hi, stride));
 
         // Закриваємось одразу. Показати «нову» частоту тут однаково нічим:
         // індекс на клієнті оновиться лише коли сервер його поверне, і
@@ -458,9 +478,11 @@ class OZR_FreqMenu extends UIScriptedMenu
         if (!m_Radio || !m_Profile)
             return;
 
-        int lo     = OZR_ClientGrid.IndexOf(m_Profile.MinMHz);
-        int hi     = OZR_ClientGrid.IndexOf(m_Profile.MaxMHz);
-        int stride = OZR_Stride();
+        int lo;
+        int hi;
+        int stride;
+        if (!OZR_ClientGrid.Window(m_Profile, lo, hi, stride))
+            return;
 
         int cur = m_Radio.OZR_ShownIndex();
         if (cur < lo || cur > hi)
@@ -468,9 +490,7 @@ class OZR_FreqMenu extends UIScriptedMenu
 
         // Спершу прилипаємо до ґратки профілю, потім крокуємо: рація могла
         // стояти між своїми каналами, якщо профіль щойно змінили.
-        float rel = cur - lo;
-        float st  = stride;
-        int   k   = Math.Round(rel / st) + dir;
+        int k = ((OZR_Chan.Snap(cur, lo, hi, stride) - lo) / stride) + dir;
 
         int last = (hi - lo) / stride;
         if (k < 0)
@@ -478,14 +498,19 @@ class OZR_FreqMenu extends UIScriptedMenu
         if (k > last)
             k = 0;
 
-        string dbg = "freq keypad: step " + dir.ToString();
-        dbg += " cur=" + cur.ToString() + " lo=" + lo.ToString() + " hi=" + hi.ToString();
-        dbg += " stride=" + stride.ToString() + " k=" + k.ToString();
-        dbg += " -> " + (lo + k * stride).ToString();
-        OZR_Log.Dbg(dbg);
+        int want = lo + k * stride;
+
+        if (OZR_Log.IsDebug())
+        {
+            string dbg = "freq keypad: step " + dir.ToString();
+            dbg += " cur=" + cur.ToString() + " lo=" + lo.ToString() + " hi=" + hi.ToString();
+            dbg += " stride=" + stride.ToString() + " k=" + k.ToString();
+            dbg += " -> " + want.ToString();
+            OZR_Log.Dbg(dbg);
+        }
 
         m_Typed = "";
-        Send(lo + k * stride);
+        Send(want);
     }
 
     // Малюємо те, що СПРАВДІ на рації, а не те, що попросили: сервер може
@@ -522,21 +547,5 @@ class OZR_FreqMenu extends UIScriptedMenu
 
         if (m_Typed == "")
             Paint();
-    }
-
-    private int OZR_Stride()
-    {
-        int stride = 1;
-        float gs = 0;
-
-        if (OZR_ClientGrid.Count() > 1)
-            gs = OZR_ClientGrid.MHzAt(1) - OZR_ClientGrid.MHzAt(0);
-
-        if (gs > 0 && m_Profile)
-            stride = Math.Round(m_Profile.StepMHz / gs);
-
-        if (stride < 1)
-            stride = 1;
-        return stride;
     }
 }

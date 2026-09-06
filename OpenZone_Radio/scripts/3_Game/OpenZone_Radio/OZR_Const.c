@@ -17,6 +17,15 @@ class OZR_Const
     // виведення ефіру (OZR_Ether.Derive відмовляє понад неї) і проби нижче.
     static const int INDEX_MAX = 65535;
 
+    // Найвища межа, яку взагалі можна написати в профілі.
+    //
+    // Це не смак, а захист від int: ефір рахується в десятитисячних МГц, тож
+    // усе понад ~214 748 МГц переповнює ціле ЩЕ ДО того, як перевірки Derive
+    // побачать число -- вони дивляться на float, а зіпсоване вже ціле. Десять
+    // тисяч мегагерц удесятеро вище за будь-яку осмислену рацію й на чотири
+    // порядки нижче за межу типу, тобто помилитись у цей бік неможливо.
+    static const int MHZ_MAX = 10000;
+
     // Довжини сплеску тут більше немає, і це не пропуск: вона була потрібна,
     // поки грав зациклений ванільний шум і обривати його доводилось таймером.
     // У власних семплів довжина своя.
@@ -135,6 +144,41 @@ class OZR_Const
     // нашими, а не захованим у коді.
     static const string INPUT_VOICE = "UAVoiceOverNet";
     static const string INPUT_PTT  = "UAOZRadioPtt";
+
+    // Прив'язати клавішу за іменем -- ОДНЕ місце на обидві.
+    //
+    // OZR_Ptt.Init і OZR_FreqInput.Init були порядково однакові: узяти ввід,
+    // поскаржитись один раз, якщо його немає, і взяти постійну обгортку. Дві
+    // копії -- і два власні прапорці «вже скаржився».
+    //
+    // Єдина діагностика, яку дає рушій, -- NULL, а причин рівно дві: не
+    // завантажився inputs.xml (шлях у CfgMods) або ім'я написане інакше, ніж
+    // у XML. Тому вони обидві названі в рядку.
+    //
+    // БЕЗ ref у викликача: UAIDWrapper -- нативний об'єкт із приватним
+    // деструктором, скрипт ним не володіє (ваніль тримає його так само,
+    // radialmenu.c:31).
+    private static ref map<string, bool> s_InputWarned;
+
+    static UAIDWrapper BindInput(string name)
+    {
+        UAInput i = GetUApi().GetInputByName(name);
+        if (i)
+        {
+            OZR_Log.Dbg("input " + name + " bound");
+            return i.GetPersistentWrapper();
+        }
+
+        if (!s_InputWarned)
+            s_InputWarned = new map<string, bool>();
+
+        if (!s_InputWarned.Contains(name))
+        {
+            s_InputWarned.Set(name, true);
+            OZR_Log.Error("input " + name + " not found - check the CfgMods inputs= path and the name in inputs.xml");
+        }
+        return null;
+    }
 
     // Ідентифікатор меню.
     //

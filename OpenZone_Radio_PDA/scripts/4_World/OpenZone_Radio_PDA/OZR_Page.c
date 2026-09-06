@@ -77,7 +77,7 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
         if (board)
         {
             st.RangeM = OZR_Set.RangeOf(board);
-            st.Live   = board.OZR_IsLive();
+            st.Live   = board.IsBroadcasting();
             st.Index  = board.GetTunedFrequencyIndex();
 
             if (OZR_Grid.Ready())
@@ -144,8 +144,9 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
         if (bp)
             window = OZR_Grid.Window(bp, lo, hi, stride);
 
-        // Ready() -- ОДИН РАЗ, поза циклом (D14): усередині це прохід по всій
-        // таблиці рушія, близько 10 500 переходів на кожен рядок книжки.
+        // Ready() -- один раз, поза циклом (D14). Тепер це поле, а не прохід по
+        // всій таблиці рушія (див. OZR_Grid), тож ціна вже не та; поза циклом
+        // воно лишається просто тому, що відповідь одна на всі рядки.
         bool gridOk = OZR_Grid.Ready();
 
         // РІШЕННЯ ПРО ДОСЯЖНІСТЬ РАХУЄТЬСЯ В ЛОКАЛЬНУ ЗМІННУ, А НЕ ПРЯМО В
@@ -228,8 +229,9 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
             return "";
         }
 
+        OZ_PDA_Base pda;
         OZ_Module_Radio board;
-        if (!Ready(sender, board, error))
+        if (!Ready(sender, pda, board, error))
             return "";
 
         // Ті самі перевірки, що й для ручної рації, і навмисно ті самі: плата
@@ -258,27 +260,27 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
 
         // Через OZR_TuneTo, а не SetFrequencyByIndex: він же й розкаже про нову
         // частоту клієнтові.
+        //
+        // Перечитування назад тут стояло й прибране: «рушій відмовив» не може
+        // статися. OZR_Bands (:66-73) фіксує ВИМІРЯНИЙ факт -- індекс рушій
+        // приймає будь-який, без обрізання, -- а сам індекс уже перевірений по
+        // вікну двома рядками вище. Перевірка, яка не спрацьовує ніколи,
+        // обіцяє захист, якого немає.
         board.OZR_TuneTo(r.Index);
-
-        // Перечитуємо НАЗАД: присвоєння індексу -- прохання до рушія, а не
-        // факт, і саме тут видно, чи він його прийняв.
-        if (board.GetTunedFrequencyIndex() != r.Index)
-        {
-            OZR_Log.Warn("radio page: engine refused index " + r.Index.ToString());
-            error = "STR_OZR_ERR_OUT_OF_BAND";
-            return "";
-        }
 
         ok = true;
         error = "";
         return "";
     }
 
-    private bool Ready(PlayerIdentity sender, out OZ_Module_Radio board, out string error)
+    // Віддає й САМ ПРИЛАД: він тут однаково знаходиться, а викликач Save()
+    // шукав його вдруге -- другий обхід інвентаря на кожне збереження заради
+    // того самого об'єкта.
+    private bool Ready(PlayerIdentity sender, out OZ_PDA_Base pda, out OZ_Module_Radio board, out string error)
     {
         board = null;
 
-        OZ_PDA_Base pda = OZ_PdaLookup.HeldBy(sender);
+        pda = OZ_PdaLookup.HeldBy(sender);
         if (!pda)
         {
             error = "STR_OZ_ERR_NO_DEVICE";
@@ -376,6 +378,24 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
         }
     }
 
+    // ІМ'Я З КЛІЄНТА, ПРИДАТНЕ ДЛЯ ЦЬОГО СХОВИЩА.
+    //
+    // Записи склеюються через "\n" і розбираються по ньому ж. Ім'я з
+    // переводом рядка розпаковувалось у КІЛЬКА записів -- а число, яке Store()
+    // віддає приладові для ліміту ячейок, рахується ДО того, як payload
+    // розберуть назад. Тобто підроблене ім'я вставляло записи, які не коштували
+    // жодної ячейки пам'яті й переживали експорт на чип. Ріжемо роздільник на
+    // вході, де він ще один символ, а не структура.
+    //
+    // Порожнє після чистки -- це не ім'я, і викликач мусить відмовити.
+    private string CleanName(string raw)
+    {
+        string s = raw;
+        s.Replace("\n", " ");
+        s.Replace("\r", " ");
+        return s.Trim();
+    }
+
     private string Payload(OZR_FreqBook book)
     {
         string payload = "";
@@ -412,33 +432,32 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
     {
         ok = false;
 
-        OZR_BookRef r;
+        OZR_FreqEntry r;
         string err;
-        if (!JsonFileLoader<OZR_BookRef>.LoadData(json, r, err) || !r)
+        if (!JsonFileLoader<OZR_FreqEntry>.LoadData(json, r, err) || !r)
         {
             error = "STR_OZ_ERR_INTERNAL";
             return "";
         }
 
+        OZ_PDA_Base pda;
         OZ_Module_Radio board;
-        if (!Ready(sender, board, error))
+        if (!Ready(sender, pda, board, error))
             return "";
 
-        OZ_PDA_Base pda = OZ_PdaLookup.HeldBy(sender);
-        if (!pda)
-        {
-            error = "STR_OZ_ERR_NO_DEVICE";
-            return "";
-        }
-
-        string name = r.Name;
+        string name = CleanName(r.Name);
         if (name == "")
         {
             error = "STR_OZR_ERR_NO_NAME";
             return "";
         }
         if (name.Length() > OZRP_Const.NAME_MAX)
-            name = name.Substring(0, OZRP_Const.NAME_MAX);
+            name = CleanName(name.Substring(0, OZRP_Const.NAME_MAX));
+        if (name == "")
+        {
+            error = "STR_OZR_ERR_NO_NAME";
+            return "";
+        }
 
         OZR_FreqBook book = new OZR_FreqBook();
         Read(pda, book);
@@ -474,9 +493,9 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
     {
         ok = false;
 
-        OZR_BookRef r;
+        OZR_FreqEntry r;
         string err;
-        if (!JsonFileLoader<OZR_BookRef>.LoadData(json, r, err) || !r)
+        if (!JsonFileLoader<OZR_FreqEntry>.LoadData(json, r, err) || !r)
         {
             error = "STR_OZ_ERR_INTERNAL";
             return "";
@@ -675,13 +694,19 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
         for (int i = 0; i < incoming.Items.Count(); i++)
         {
             OZR_FreqEntry e = incoming.Items[i];
-            if (!e || e.Name == "")
+            if (!e)
+                continue;
+
+            // Чипом теж можна принести підроблене ім'я: він приходить від
+            // гравця так само, як прохання зберегти.
+            string name = CleanName(e.Name);
+            if (name == "")
                 continue;
 
             int at = -1;
             for (int j = 0; j < book.Items.Count(); j++)
             {
-                if (book.Items[j].Name == e.Name)
+                if (book.Items[j].Name == name)
                 {
                     at = j;
                     break;
@@ -689,7 +714,7 @@ class OZ_PdaHandlerRadio : OZ_PageHandler
             }
 
             OZR_FreqEntry copy = new OZR_FreqEntry();
-            copy.Name  = e.Name;
+            copy.Name  = name;
             copy.Index = e.Index;
 
             if (at >= 0)

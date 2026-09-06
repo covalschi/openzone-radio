@@ -22,26 +22,10 @@ class OZR_FreqInput
     // скрипт ним не володіє.
     private static UAIDWrapper s_Key;
     private static OZR_FreqMenu s_Menu;
-    private static bool s_Warned = false;
 
     static void Init()
     {
-        UAInput i = GetUApi().GetInputByName(OZR_Const.INPUT_FREQ);
-        if (!i)
-        {
-            // Єдина діагностика, яку дає рушій: NULL. Причин рівно дві --
-            // inputs.xml не завантажився (шлях у CfgMods) або ім'я написане
-            // інакше, ніж у XML.
-            if (!s_Warned)
-            {
-                s_Warned = true;
-                OZR_Log.Error("input " + OZR_Const.INPUT_FREQ + " not found - check the CfgMods inputs= path and the name in inputs.xml");
-            }
-            return;
-        }
-
-        s_Key = i.GetPersistentWrapper();
-        OZR_Log.Dbg("input " + OZR_Const.INPUT_FREQ + " bound");
+        s_Key = OZR_Const.BindInput(OZR_Const.INPUT_FREQ);
     }
 
     static void Poll()

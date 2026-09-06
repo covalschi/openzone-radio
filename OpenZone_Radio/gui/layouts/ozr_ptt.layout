@@ -11,6 +11,11 @@
 // Картинка -- ванільна, з інвентарного набору. Свого атласу мод не має, а
 // малювати рацію заново, коли гра вже несе рацію, немає підстав.
 //
+// КОЛЬОРИ ЖИВУТЬ ТУТ, А НЕ В СКРИПТІ. Раніше OZR_PttHud перефарбовував
+// картку, іконку й підпис на кожній зміні режиму, тож оголошені тут сірі
+// не бачив жоден гравець. Біле по темній напівпрозорій підкладці --
+// єдине, що читається і на світлому небі, і на снігу.
+//
 // Імена читає OZR_PttHud.c: PttCard (корінь), PttIcon, PttState.
 
 PanelWidgetClass PttCard {
@@ -22,7 +27,7 @@ PanelWidgetClass PttCard {
  vexactpos 1
  hexactsize 1
  vexactsize 1
- color 0.055 0.059 0.071 0.549
+ color 0.055 0.059 0.071 0.588
  style rover_sim_colorable
  priority 1
  {
@@ -42,7 +47,7 @@ PanelWidgetClass PttCard {
    mode blend
    "src alpha" 1
    "stretch mode" stretch_w_h
-   color 0.451 0.451 0.490 1
+   color 1 1 1 1
    priority 2
   }
   TextWidgetClass PttState {
@@ -60,7 +65,7 @@ PanelWidgetClass PttCard {
    "exact text size" 18
    "text halign" left
    "text valign" center
-   color 0.451 0.451 0.490 1
+   color 1 1 1 1
    priority 3
   }
  }

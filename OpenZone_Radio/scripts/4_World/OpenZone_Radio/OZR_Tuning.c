@@ -144,11 +144,7 @@ modded class TransmitterBase
 
         // Прив'язуємось до ґратки САМОГО профілю, а не до сітки рушія: рація
         // могла стояти між своїми діленнями, якщо профіль щойно змінили.
-        float rel = current - lo;
-        float st  = stride;
-        int   k   = Math.Round(rel / st);
-
-        int next = lo + (k + 1) * stride;
+        int next = OZR_Chan.Snap(current, lo, hi, stride) + stride;
         if (next > hi)
             next = lo;
         return next;
@@ -232,7 +228,8 @@ modded class TransmitterBase
         {
             EnableBroadcast(false);
             OZR_PublishAir(false);
-            OZR_Log.Dbg("ptt gate: " + GetType() + " left its place with the air open on a held key - shut");
+            if (OZR_Log.IsDebug())
+                OZR_Log.Dbg("ptt gate: " + GetType() + " left its place with the air open on a held key - shut");
         }
     }
 
@@ -403,7 +400,8 @@ modded class TransmitterBase
             // жодного спостережуваного наслідку: рація, яка мовчить, і рація,
             // якої гейт не торкнувся, зовні виглядають однаково доти, доки
             // хтось не спробує в неї заговорити.
-            OZR_Log.Dbg("ptt gate: " + GetType() + " powered up with the air shut");
+            if (OZR_Log.IsDebug())
+                OZR_Log.Dbg("ptt gate: " + GetType() + " powered up with the air shut");
         }
     }
 
@@ -421,7 +419,8 @@ modded class TransmitterBase
             EnableBroadcast(false);
             OZR_PublishAir(false);
             m_OZR_Latched = false;
-            OZR_Log.Dbg("ptt gate: " + GetType() + " asked to speak while dead - refused");
+            if (OZR_Log.IsDebug())
+                OZR_Log.Dbg("ptt gate: " + GetType() + " asked to speak while dead - refused");
             return false;
         }
 
@@ -437,12 +436,18 @@ modded class TransmitterBase
         EnableBroadcast(on);
         OZR_PublishAir(on);
 
-        string said = "ptt gate: " + GetType() + " air ";
-        if (on)
-            said += "OPEN";
-        else
-            said += "shut";
-        OZR_Log.Dbg(said + ", broadcasting=" + IsBroadcasting().ToString());
+        // РЯДОК СКЛАДАЄМО ПІСЛЯ ПЕРЕВІРКИ ПРАПОРЦЯ. Цей шлях біжить на КОЖНУ
+        // профільну рацію в інвентарі на кожен край PTT, тож на бойовому
+        // сервері з вимкненим логом конкатенації були чистою платою ні за що.
+        if (OZR_Log.IsDebug())
+        {
+            string said = "ptt gate: " + GetType() + " air ";
+            if (on)
+                said += "OPEN";
+            else
+                said += "shut";
+            OZR_Log.Dbg(said + ", broadcasting=" + IsBroadcasting().ToString());
+        }
         return true;
     }
 

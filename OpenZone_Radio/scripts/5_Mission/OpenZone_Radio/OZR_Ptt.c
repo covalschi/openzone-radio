@@ -42,7 +42,6 @@ class OZR_Ptt
     // скрипт ним не володіє. Ваніль тримає його так само (radialmenu.c:31).
     private static UAIDWrapper s_Key;
     private static bool s_Down    = false;
-    private static bool s_Warned  = false;
 
     // Защіпка й вимір подвійного натиснення.
     private static bool s_Latched   = false;
@@ -63,19 +62,7 @@ class OZR_Ptt
 
     static void Init()
     {
-        UAInput i = GetUApi().GetInputByName(OZR_Const.INPUT_PTT);
-        if (!i)
-        {
-            if (!s_Warned)
-            {
-                s_Warned = true;
-                OZR_Log.Error("input " + OZR_Const.INPUT_PTT + " not found - check the CfgMods inputs= path and the name in inputs.xml");
-            }
-            return;
-        }
-
-        s_Key = i.GetPersistentWrapper();
-        OZR_Log.Dbg("input " + OZR_Const.INPUT_PTT + " bound");
+        s_Key = OZR_Const.BindInput(OZR_Const.INPUT_PTT);
     }
 
     static void Poll()

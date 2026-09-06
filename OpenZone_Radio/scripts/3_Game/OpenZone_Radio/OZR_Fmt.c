@@ -25,10 +25,7 @@ class OZR_Fmt
         if (v < 0)
             return "---";
 
-        int scale = 1;
-        int i;
-        for (i = 0; i < places; i++)
-            scale = scale * 10;
+        int scale = Math.Pow(10, places);
 
         int whole = Math.Floor(v);
         int frac  = Math.Round((v - whole) * scale);
@@ -40,10 +37,7 @@ class OZR_Fmt
             frac  = frac - scale;
         }
 
-        string tail = frac.ToString();
-        while (tail.Length() < places)
-            tail = "0" + tail;
-
-        return whole.ToString() + "." + tail;
+        // ToStringLen -- це і є доповнення нулями зліва (enconvert.c:59).
+        return whole.ToString() + "." + frac.ToStringLen(places);
     }
 }

@@ -1,6 +1,9 @@
 // Панель «RADIO» в адмiнському вiкнi OpenZone (VPP).
 //
-// ЗГЕНЕРОВАНО scratchpad/genradiovpp.py -- правити генератор, не це.
+// ГЕНЕРАТОРА БІЛЬШЕ НЕМАЄ. Тут стояло «згенеровано scratchpad/genradiovpp.py
+// -- правити генератор, не це», і того скрипта в репозиторії немає: він жив у
+// тимчасовому каталозі й пішов разом із ним. Файл підтримується руками, і
+// краще сказати це прямо, ніж відсилати читача до неіснуючого джерела.
 //
 // Лiворуч список профiлiв, праворуч форма одного. Дальнiсть -- ТЕКСТ, не
 // поле: `range` живе в CfgVehicles i читається рушiєм, а скрипт має лише
@@ -475,22 +478,6 @@ FrameWidgetClass OZ_RadioVppPane {
  }
  TextWidgetClass RadF_Fit2 {
   position 380 342
-  size 580 20
-  hexactpos 1
-  vexactpos 1
-  hexactsize 1
-  vexactsize 1
-  visible 1
-  ignorepointer 1
-  text "-"
-  font "gui/fonts/sdf_MetronBook24"
-  "exact text" 1
-  "exact text size" 14
-  color 0.788 0.788 0.816 1
-  priority 4
- }
- TextWidgetClass RadF_Fit3 {
-  position 380 364
   size 580 20
   hexactpos 1
   vexactpos 1

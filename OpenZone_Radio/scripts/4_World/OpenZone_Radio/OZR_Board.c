@@ -178,9 +178,4 @@ class OZ_Module_Radio extends TransmitterBase
 
         return did;
     }
-
-    bool OZR_IsLive()
-    {
-        return IsBroadcasting();
-    }
 }

@@ -528,9 +528,10 @@ class OZR_PageRadio : OZ_PdaPage
         if (!m_State || m_State.EtherStep <= 0)
             return;
 
-        int stride = Math.Round(m_State.StepMHz / m_State.EtherStep);
-        if (stride < 1)
-            stride = 1;
+        // Той самий підрахунок, що на сервері й у клавіатурі частот -- одним
+        // місцем (OZR_Chan). Сітка сюди приїжджає в стані сторінки, а не в
+        // OZR_ClientGrid, тому й числами.
+        int stride = OZR_Chan.Stride(m_State.StepMHz, m_State.EtherStep);
 
         // Крокуємо від того, що НАБРАНО, якщо набрано щось осмислене: інакше
         // «набрав 140.5, тисну +» відкидало б назад до тієї частоти, на якій
@@ -594,7 +595,23 @@ class OZR_PageRadio : OZ_PdaPage
         SetText("BandText", band);
 
         PaintButtons();
-        PaintBook();
+
+        // СПИСОК ПЕРЕМАЛЬОВУЄМО ЛИШЕ КОЛИ Є ЧОМУ.
+        //
+        // Paint() приходить на кожну відповідь про стан, тобто раз на секунду
+        // при будь-якому русі; PaintBook() чистить листбокс і будує його
+        // наново, а це скидає прокрутку й вибір. Саме заради компенсації
+        // цього поруч живе повторний пошук виділеного рядка за іменем (D12) --
+        // сам факт його існування й був доказом зайвої перебудови.
+        //
+        // Рядки міняються рівно з двох причин: приїхала книжка (відповіді
+        // book / chip_read малюють її самі) або пам'ять приладу стала іншою.
+        // Режим чипа сюди не входить взагалі: його список живе своїм життям.
+        if (m_ChipMode)
+            return;
+
+        if (!m_Rows || MemoryChanged())
+            PaintBook();
     }
 
     // Пам'ять та сама, що й була? Порівнюємо саме те, що сервер шле завжди.
@@ -644,12 +661,12 @@ class OZR_PageRadio : OZ_PdaPage
         if (!m_Name)
             return;
 
-        OZR_BookRef r = new OZR_BookRef();
+        OZR_FreqEntry r = new OZR_FreqEntry();
         r.Name = m_Name.GetText();
 
         string json;
         string err;
-        if (JsonFileLoader<OZR_BookRef>.MakeData(r, json, err, false))
+        if (JsonFileLoader<OZR_FreqEntry>.MakeData(r, json, err, false))
             OZ_Rpc.Request(OZRP_Const.PAGE_RADIO, "save", json);
     }
 
@@ -661,12 +678,12 @@ class OZR_PageRadio : OZ_PdaPage
             return;
         }
 
-        OZR_BookRef r = new OZR_BookRef();
+        OZR_FreqEntry r = new OZR_FreqEntry();
         r.Name = m_Rows.Items[m_Picked].Name;
 
         string json;
         string err;
-        if (JsonFileLoader<OZR_BookRef>.MakeData(r, json, err, false))
+        if (JsonFileLoader<OZR_FreqEntry>.MakeData(r, json, err, false))
             OZ_Rpc.Request(OZRP_Const.PAGE_RADIO, "forget", json);
     }
 

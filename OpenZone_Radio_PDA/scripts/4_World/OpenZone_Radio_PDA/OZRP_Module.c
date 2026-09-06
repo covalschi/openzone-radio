@@ -53,7 +53,32 @@ class OZRP_Module : CF_ModuleWorld
         // без ядра; коли ядро є -- воно й вирішує.
         OZR_Log.SetDebug(OZ_Log.IsDebug());
 
-        OZR_Hardware.Declare();
+        // ЗАЛІЗО, ЯКЕ ЦЕЙ МОД ПРИНОСИТЬ У КПК -- через ДОГОВІР, а не правкою
+        // його файлів: OZ_PdaHardware приймає чужі модулі одним викликом, і
+        // адмін лишається головнішим -- якщо він уже описав цей класнейм у
+        // Hardware.json, наш опис не застосовується. Сервер, який хоче іншу
+        // дальність або витрату, править свій JSON, а не чужий мод.
+        //
+        // Плата вмикає сторінку «Рація», і саме тому вона в EnablesPages, а не
+        // в профілі пристрою: без плати сторінці нема що показувати, а вкладка,
+        // за якою нікого немає, гірша за відсутню.
+        OZ_ModuleSpec radio = new OZ_ModuleSpec();
+        radio.ClassName    = OZRP_Const.BOARD_CLASS;
+        radio.DisplayName  = "#STR_OZR_MOD_RADIO";
+        radio.Kind         = OZRP_Const.MOD_RADIO;
+
+        // ЧИСЛО ІНЕРТНЕ, і сказати це треба вголос. Задум був простий:
+        // приймач шумить постійно, передавач -- лише коли говорять, тож
+        // півтора значило б «чутно по батареї, але не смертельно». Витрату
+        // воно ніколи не множило: єдиний метод, який читав PowerFactor у КПК,
+        // не мав жодного викликача й прибраний у задачі 52 (2026-09-06). Поле
+        // лишається як ДАНІ, видимі адмінові в Hardware.json і у формі VPP.
+        radio.PowerFactor  = 1.5;
+
+        radio.EnablesPages = new array<string>();
+        radio.EnablesPages.Insert(OZRP_Const.PAGE_RADIO);
+
+        bool declared = OZ_PdaHardware.Declare(radio);
 
         // Поведінка плати: вставляння й «прилад працює» приходять звідси, а
         // не з обходу онлайну.
@@ -67,7 +92,7 @@ class OZRP_Module : CF_ModuleWorld
         m_WakeTimer = new Timer(CALL_CATEGORY_SYSTEM);
         m_WakeTimer.Run(WAKE_INTERVAL, this, "WakeTick", NULL, true);
 
-        OZR_Log.Info("radio in the pda: modules=" + OZR_Hardware.Count().ToString());
+        OZR_Log.Info("radio in the pda: board declared=" + declared.ToString());
     }
 
     override void OnMissionFinish(Class sender, CF_EventArgs args)
