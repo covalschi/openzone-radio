@@ -78,14 +78,14 @@ modded class OZ_VppAdminMenu
 
         if (id == "radio")
         {
-            AskCfg(OZR_VppAdminCfg.CFG_PROFILES);
+            AskCfg(OZR_VppModule.CFG_PROFILES);
             PaintGrid();
         }
     }
 
     override void OnCfgText(string name, string body)
     {
-        if (name == OZR_VppAdminCfg.CFG_PROFILES)
+        if (name == OZR_VppModule.CFG_PROFILES)
         {
             OZR_Profiles c;
             string err;
@@ -116,7 +116,7 @@ modded class OZ_VppAdminMenu
     {
         super.OnCfgApplied();
         if (CurrentPane() == "radio")
-            AskCfg(OZR_VppAdminCfg.CFG_PROFILES);
+            AskCfg(OZR_VppModule.CFG_PROFILES);
     }
 
     override bool OnItemSelected(Widget w, int x, int y, int row, int column, int oldRow, int oldColumn)
@@ -158,7 +158,7 @@ modded class OZ_VppAdminMenu
             if (nm == "BtnRadReload")
             {
                 m_RadDelArmed = false;
-                AskCfg(OZR_VppAdminCfg.CFG_PROFILES);
+                AskCfg(OZR_VppModule.CFG_PROFILES);
                 Hint("reloaded from the server");
                 return true;
             }
@@ -175,17 +175,14 @@ modded class OZ_VppAdminMenu
         PaintEther();
     }
 
+    // Той самий опис, що в лозі сервера -- однією функцією в 3_Game. Два різні
+    // описи одного числа читаються як два різні числа.
     private string Running()
     {
         if (!OZR_ClientGrid.Ready())
             return "the server has not sent it yet";
 
-        int n = OZR_ClientGrid.Count();
-        string line = OZR_Fmt.MHz(OZR_ClientGrid.BaseMHz());
-        line += " to " + OZR_Fmt.MHz(OZR_ClientGrid.MHzAt(n - 1));
-        line += " MHz, step " + OZR_Fmt.Step(OZR_ClientGrid.StepMHz());
-        line += ", " + n.ToString() + " divisions";
-        return line;
+        return OZR_Ether.DescribeGrid(OZR_ClientGrid.BaseMHz(), OZR_ClientGrid.StepMHz(), OZR_ClientGrid.Count());
     }
 
     // Ефiр, який вийде з ПОТОЧНОГО стану форми. Рахується тiєю ж функцiєю, що
@@ -246,19 +243,10 @@ modded class OZ_VppAdminMenu
 
     private bool SameAsRunning(OZR_EtherPlan plan)
     {
-        if (!OZR_ClientGrid.Ready() || !plan || !plan.Ok)
-            return false;
-        if (OZR_ClientGrid.Count() != plan.Count)
+        if (!OZR_ClientGrid.Ready())
             return false;
 
-        // Допуск -- сота частина кроку: жива сiтка ВИМIРЯНА, i вимiр iде через
-        // float32.
-        float tol = plan.StepMHz * 0.01;
-        if (Math.AbsFloat(OZR_ClientGrid.BaseMHz() - plan.BaseMHz) > tol)
-            return false;
-        if (Math.AbsFloat(OZR_ClientGrid.StepMHz() - plan.StepMHz) > tol)
-            return false;
-        return true;
+        return OZR_Ether.Same(plan, OZR_ClientGrid.BaseMHz(), OZR_ClientGrid.StepMHz(), OZR_ClientGrid.Count());
     }
 
     // ------------------------------------------------------------ список
@@ -390,7 +378,6 @@ modded class OZ_VppAdminMenu
             Say("RadF_Chan", "channels: -");
             Say("RadF_Fit1", "nothing to check yet - pick a profile on the left, or fill the three fields");
             Say("RadF_Fit2", "");
-            Say("RadF_Fit3", "");
             return;
         }
 
@@ -399,7 +386,6 @@ modded class OZ_VppAdminMenu
             Say("RadF_Chan", "channels: none");
             Say("RadF_Fit1", "the upper bound must be above the lower one");
             Say("RadF_Fit2", "");
-            Say("RadF_Fit3", "");
             return;
         }
 
@@ -412,7 +398,6 @@ modded class OZ_VppAdminMenu
             Say("RadF_Chan", "channels: -");
             Say("RadF_Fit1", "the ether these profiles ask for cannot be built - see the line at the top");
             Say("RadF_Fit2", "");
-            Say("RadF_Fit3", "");
             return;
         }
 
@@ -464,8 +449,6 @@ modded class OZ_VppAdminMenu
             }
         }
         Say("RadF_Fit2", now);
-
-        Say("RadF_Fit3", "");
     }
 
     private void Say(string widget, string text)
@@ -594,7 +577,7 @@ modded class OZ_VppAdminMenu
             return;
         }
 
-        SendCfg(OZR_VppAdminCfg.CFG_PROFILES, body);
+        SendCfg(OZR_VppModule.CFG_PROFILES, body);
         m_RadDelArmed = false;
         RebuildRadList();
         Hint("sent to the server");

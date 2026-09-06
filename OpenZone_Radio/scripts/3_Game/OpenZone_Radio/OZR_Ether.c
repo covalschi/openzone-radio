@@ -99,19 +99,14 @@ class OZR_Ether
             if (!p)
                 continue;
 
-            if (p.MinMHz <= 0)
+            // ОДИН предикат на всіх -- див. OZR_RadioProfile.Problem. Тут він
+            // ВІДМОВЛЯЄ цілком: ефір виводиться з усього набору одразу, і
+            // порахувати його «без одного профілю» означало б віддати адмінові
+            // сітку, якої він не просив.
+            string bad = p.Problem();
+            if (bad != "")
             {
-                plan.Why = p.ClassName + " starts at or below zero MHz";
-                return plan;
-            }
-            if (p.MaxMHz <= p.MinMHz)
-            {
-                plan.Why = p.ClassName + " has an empty or inverted band";
-                return plan;
-            }
-            if (p.StepMHz <= 0)
-            {
-                plan.Why = p.ClassName + " has a step of zero";
+                plan.Why = p.Named() + " " + bad;
                 return plan;
             }
 
@@ -181,6 +176,25 @@ class OZR_Ether
         return plan;
     }
 
+    // ОПИС СІТКИ ЧИСЛАМИ -- одне формулювання на всіх.
+    //
+    // Той самий рядок «низ to верх MHz, step X, N divisions» був написаний
+    // тричі: тут, у OZR_EtherServer.Running (з виміряної сітки) і у вкладці
+    // VPP (з клієнтської копії). Власний коментар при цьому вимагав, щоб
+    // сервер і панель казали ОДНЕ Й ТЕ САМЕ -- вимога, яку три копії
+    // виконують лише доти, доки їх не правили нарізно.
+    static string DescribeGrid(float baseMHz, float step, int count)
+    {
+        if (count < 1)
+            return "-";
+
+        string s = OZR_Fmt.MHz(baseMHz);
+        s += " to " + OZR_Fmt.MHz(baseMHz + (count - 1) * step);
+        s += " MHz, step " + OZR_Fmt.Step(step);
+        s += ", " + count.ToString() + " divisions";
+        return s;
+    }
+
     // Один рядок про те, що вийде. Однаковий у лозі сервера й у вкладці --
     // навмисне: два різні описи одного числа читаються як два різні числа.
     static string Describe(OZR_EtherPlan plan)
@@ -190,10 +204,29 @@ class OZR_Ether
         if (!plan.Ok)
             return plan.Why;
 
-        string s = OZR_Fmt.MHz(plan.BaseMHz);
-        s += " to " + OZR_Fmt.MHz(plan.TopMHz());
-        s += " MHz, step " + OZR_Fmt.Step(plan.StepMHz);
-        s += ", " + plan.Count.ToString() + " divisions";
-        return s;
+        return DescribeGrid(plan.BaseMHz, plan.StepMHz, plan.Count);
+    }
+
+    // Чи план збігається з описаною трьома числами сіткою.
+    //
+    // Допуск -- сота частина кроку: жива сітка ВИМІРЯНА, і вимір іде через
+    // float32, тож вимагати побітової рівності означало б вимагати
+    // неможливого. Порівняння теж було написане двічі -- на сервері й у
+    // вкладці, -- з тим самим ризиком розійтись.
+    static bool Same(OZR_EtherPlan plan, float baseMHz, float step, int count)
+    {
+        if (!plan || !plan.Ok || count < 1)
+            return false;
+
+        if (count != plan.Count)
+            return false;
+
+        float tol = plan.StepMHz * 0.01;
+        if (Math.AbsFloat(baseMHz - plan.BaseMHz) > tol)
+            return false;
+        if (Math.AbsFloat(step - plan.StepMHz) > tol)
+            return false;
+
+        return true;
     }
 }

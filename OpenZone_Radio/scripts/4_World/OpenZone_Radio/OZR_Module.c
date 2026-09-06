@@ -27,6 +27,23 @@ class OZR_Module : CF_ModuleWorld
         // приходить у порожнечу.
         EnableMissionStart();
         EnableMissionFinish();
+
+        // Рядок гравця в лічильнику запитів іде з ним. Без цього мапа росла б
+        // на кожного, хто хоч раз спитав сітку, і не зменшувалась ніколи.
+        EnableInvokeDisconnect();
+    }
+
+    override void OnInvokeDisconnect(Class sender, CF_EventArgs args)
+    {
+        super.OnInvokeDisconnect(sender, args);
+
+        if (!GetGame().IsServer())
+            return;
+
+        // На дисконекті особи може вже не бути, тому CF окремо несе UID.
+        CF_EventPlayerDisconnectedArgs dArgs = CF_EventPlayerDisconnectedArgs.Cast(args);
+        if (dArgs)
+            OZR_Throttle.Forget(dArgs.UID);
     }
 
     // Клієнтський бік: тягне сітку і тримає таймер, поки не дотягне.
@@ -128,23 +145,25 @@ class OZR_Module : CF_ModuleWorld
         GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_GRID_REQ, new Param1<int>(OZR_Const.SCHEMA_PROFILES), true);
     }
 
-    // Гравець за особою відправника. Ходимо по онлайну, бо іншого зв'язку
-    // між PlayerIdentity й сутністю на сервері немає.
+    // Гравець за особою відправника -- ОДНИМ СТРИБКОМ.
+    //
+    // Тут стояв обхід усього онлайну зі звіркою рядків GetId(): «іншого
+    // зв'язку між PlayerIdentity й сутністю немає» -- твердження, яке просто
+    // не було перевірене. Зв'язок є й нативний: PlayerIdentityBase.GetPlayer()
+    // (3_game/gameplay.c:375). Обхід коштував десятки кастів і дві рядкові
+    // алокації на гравця на КОЖЕН пакет настройки й на кожен край PTT; той
+    // самий фікс уже зроблено в КПК (OZ_PdaAccess.PlayerOf).
+    //
+    // Різниця в поведінці одна й на краще: застаріла особа перепідключеного
+    // гравця тепер дає порожньо, а не його НОВЕ тіло. Для обробника пакета це
+    // й є правильна відповідь -- відкривати рацію тому, хто цього пакета не
+    // слав, не треба.
     private PlayerBase OZR_PlayerOf(PlayerIdentity who)
     {
         if (!who)
             return null;
 
-        array<Man> players = new array<Man>();
-        GetGame().GetPlayers(players);
-
-        for (int i = 0; i < players.Count(); i++)
-        {
-            PlayerBase p = PlayerBase.Cast(players[i]);
-            if (p && p.GetIdentity() && p.GetIdentity().GetId() == who.GetId())
-                return p;
-        }
-        return null;
+        return PlayerBase.Cast(who.GetPlayer());
     }
 
     // ----------------------------------------------------------------- RPC
@@ -157,82 +176,17 @@ class OZR_Module : CF_ModuleWorld
         if (type != CallType.Server || !sender)
             return;
 
+        if (!OZR_Throttle.Allow(sender, "grid"))
+            return;
+
         // ЛОГУЄМО, бо без цього рядка «сітка не приїхала» не має жодного
         // сліду в жодному лозі: ретейл-клієнт не пише скриптових рядків у
         // .RPT ЗОВСІМ (перевірено 2026-08-31: нуль рядків SCRIPT за сесію),
         // тож єдине місце, де видно цей обмін, -- серверний бік.
-        OZR_Log.Dbg("ether asked for by " + sender.GetName());
+        if (OZR_Log.IsDebug())
+            OZR_Log.Dbg("ether asked for by " + sender.GetName());
 
-        // ЧИСЛАМИ, а не JSON-ом: рядок-значення рушій ріже на 1023 байтах, і
-        // один пакет із сіткою та всіма профілями переріс цю межу на
-        // одинадцятому профілі. Обробник падав із «String CORRUPTED», а
-        // виглядало це як «сітка не приїхала».
-        // Сітку віддаємо, ЛИШЕ якщо вона сітка.
-        //
-        // Без цієї перевірки сервер описував клієнтові ванільну вісімку як
-        // рівну ґратку: база 87.800, "крок" (102.5 - 87.8) / 7 = 2.1000,
-        // вісім ділень. Клієнт перевірити рівномірність не може -- йому їдуть
-        // три числа, а не таблиця, -- тож він чесно рахував base + i*step для
-        // індексів СПРАВЖНЬОЇ сітки. Рація, збережена на індексі 962 (у сітці
-        // на 1281 ділення це 148.025 МГц), підписувалась як 2108.000 МГц, а
-        // ванільна ручка крокувала її по 2.1 МГц за натиск.
-        //
-        // Спостережено на живому сервері 2026-09-01: після рестарту не
-        // піднявся нативний патч, і рушій роздав ванільну вісімку.
-        //
-        // Нулі означають "ефіру немає", і кожен споживач на клієнті вже вміє
-        // це читати: підпис падає на ванільний, клавіатура не відкривається.
-        bool even = OZR_Grid.Ready();
-        float gBase  = 0;
-        float gStep  = 0;
-        int   gCount = 0;
-        if (even)
-        {
-            gBase  = OZR_Grid.Base();
-            gStep  = OZR_Grid.StepMHz();
-            gCount = OZR_Grid.Count();
-        }
-        else
-        {
-            OZR_Log.Warn("ether asked for, but the engine's table is not an even grid - telling the client there is no ether instead of describing the vanilla eight as one");
-        }
-
-        GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_GRID_RES,
-            new Param3<float, float, int>(gBase, gStep, gCount),
-            true, sender);
-
-        // Гучності їдуть тим самим запитом, бо питання те саме: «що цей
-        // сервер про ефір думає». Окремим пакетом, а не полями в сітці, --
-        // сітка може бути відсутньою, а гучності діють однаково завжди.
-        OZR_Settings st = OZR_Settings.Get();
-        if (st)
-        {
-            float mirror = 0;
-            if (st.MirrorPtt)
-                mirror = 1;
-
-            int cargo = 0;
-            if (st.PttFromCargo)
-                cargo = 1;
-
-            GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_AUDIO_RES,
-                new Param4<float, float, int, int>(st.SquelchGain, mirror, st.SquelchRange, cargo),
-                true, sender);
-        }
-
-        OZR_Profiles cfg = OZR_Profiles.Get();
-        if (!cfg || !cfg.Radios)
-            return;
-
-        // По пакету на профіль. Їх десяток -- це десяток крихітних пакетів раз
-        // на сесію, і жодної довжини, яку можна переростити.
-        for (int i = 0; i < cfg.Radios.Count(); i++)
-        {
-            OZR_RadioProfile p = cfg.Radios[i];
-            GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_PROF_RES,
-                new Param4<string, float, float, float>(p.ClassName, p.MinMHz, p.MaxMHz, p.StepMHz),
-                true, sender);
-        }
+        OZR_EtherServer.SendTo(sender);
     }
 
     // Пряма настройка на ділення. Клієнт присилає ЧИСЛО, і воно не має жодної
@@ -352,21 +306,30 @@ class OZR_Module : CF_ModuleWorld
         if (!ctx.Read(p))
             return;
 
+        // Обхід усього інвентаря на кожен край -- і саме тому межа. Свій
+        // клієнт шле краї, а не стан щокадру (див. OZR_Ptt), тож у нього
+        // півсекунди не забирають нічого.
+        if (!OZR_Throttle.Allow(sender, "ptt"))
+            return;
+
         PlayerBase player = OZR_PlayerOf(sender);
         if (!player || !player.GetInventory())
             return;
 
         int touched = OZR_SetAll(player, p.param1, p.param2);
 
-        string said = "ptt: " + sender.GetName();
-        if (p.param1)
-            said += " opens ";
-        else
-            said += " shuts ";
-        said += touched.ToString() + " radio(s)";
-        if (p.param2)
-            said += " (latched)";
-        OZR_Log.Dbg(said);
+        if (OZR_Log.IsDebug())
+        {
+            string said = "ptt: " + sender.GetName();
+            if (p.param1)
+                said += " opens ";
+            else
+                said += " shuts ";
+            said += touched.ToString() + " radio(s)";
+            if (p.param2)
+                said += " (latched)";
+            OZR_Log.Dbg(said);
+        }
     }
 
     // Скільки передавачів перемкнули. Число повертається не для краси: «нуль»
@@ -518,7 +481,7 @@ class OZR_Module : CF_ModuleWorld
         if (type != CallType.Client)
             return;
 
-        Param4<float, float, int, int> p = new Param4<float, float, int, int>(1.0, 1.0, OZR_Const.SQUELCH_RANGE_DEFAULT, 0);
+        Param4<float, bool, int, bool> p = new Param4<float, bool, int, bool>(1.0, true, OZR_Const.SQUELCH_RANGE_DEFAULT, true);
         if (!ctx.Read(p))
             return;
 

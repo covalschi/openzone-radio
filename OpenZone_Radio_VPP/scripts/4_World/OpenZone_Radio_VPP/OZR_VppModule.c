@@ -7,6 +7,10 @@
 [CF_RegisterModule(OZR_VppModule)]
 class OZR_VppModule : CF_ModuleWorld
 {
+    // Ім'я конфіга в консолі ядра. Живе тут, бо тут його й реєструють; окремий
+    // клас на одну константу й один рядок Declare() був зайвою ланкою.
+    static const string CFG_PROFILES = "RadioProfiles";
+
     override void OnInit()
     {
         super.OnInit();
@@ -20,6 +24,6 @@ class OZR_VppModule : CF_ModuleWorld
         if (!GetGame().IsServer())
             return;
 
-        OZR_VppAdminCfg.Declare();
+        OZ_AdminCfg.Register(CFG_PROFILES, OZR_Const.PROFILES, new OZR_ProfilesApplier(), "radio");
     }
 }

@@ -9,13 +9,152 @@
 // тільки з наступним запуском сервера. Це сказано вголос -- і в лозі, і у
 // вкладці: мовчазна відкладена дія гірша за відсутню.
 
+// Скільки одному клієнтові дозволено питати.
+//
+// Ні запит сітки, ні край PTT не мали жодної межі: змінений клієнт міг слати
+// їх щокадру, а сервер на кожен запит сітки розсилає ефір, гучності й пакет на
+// профіль (одинадцять RPC за замовчуванням), на кожен PTT -- обходить увесь
+// інвентар гравця. Півсекунди на рід запиту -- це вчетверо частіше, ніж їх
+// шле власний клієнт (тяга сітки раз на дві секунди), тобто чесного гравця
+// межа не помічає взагалі.
+class OZR_Throttle
+{
+    private static ref map<string, int> s_Last;
+    private static const int GAP_MS = 500;
+
+    static bool Allow(PlayerIdentity who, string kind)
+    {
+        if (!who)
+            return false;
+
+        if (!s_Last)
+            s_Last = new map<string, int>();
+
+        string key = kind + ":" + who.GetPlainId();
+        int now = GetGame().GetTime();
+
+        int was;
+        if (s_Last.Find(key, was) && now - was < GAP_MS)
+            return false;
+
+        s_Last.Set(key, now);
+        return true;
+    }
+
+    // Гравець пішов -- його рядок теж. Мапа без цього росла б увесь запуск.
+    // За UID, а не за особою: на дисконекті особи вже може не бути, і саме
+    // тому CF несе uid окремим полем події.
+    static void Forget(string uid)
+    {
+        if (!s_Last || uid == "")
+            return;
+
+        s_Last.Remove("grid:" + uid);
+        s_Last.Remove("ptt:" + uid);
+    }
+}
+
 class OZR_EtherServer
 {
     private static ref OZR_EtherPlan s_Plan;
 
-    static OZR_EtherPlan Plan()
+    // ЩО ЦЕЙ СЕРВЕР ДУМАЄ ПРО ЕФІР -- одному клієнтові.
+    //
+    // Раніше це був тілом обробника RPC, і саме тому адмінська правка
+    // профілів не доїжджала до вже підключених: розіслати те саме було нема
+    // чим, а клієнтська тяга зупиняється після першої вдалої сітки. Тепер
+    // місце одне, і його кличуть обидва -- запит клієнта й Apply у вкладці.
+    static void SendTo(PlayerIdentity who)
     {
-        return s_Plan;
+        if (!who)
+            return;
+
+        // ЧИСЛАМИ, а не JSON-ом: рядок-значення рушій ріже на 1023 байтах, і
+        // один пакет із сіткою та всіма профілями переріс цю межу на
+        // одинадцятому профілі. Обробник падав із «String CORRUPTED», а
+        // виглядало це як «сітка не приїхала».
+        // Сітку віддаємо, ЛИШЕ якщо вона сітка.
+        //
+        // Без цієї перевірки сервер описував клієнтові ванільну вісімку як
+        // рівну ґратку: база 87.800, "крок" (102.5 - 87.8) / 7 = 2.1000,
+        // вісім ділень. Клієнт перевірити рівномірність не може -- йому їдуть
+        // три числа, а не таблиця, -- тож він чесно рахував base + i*step для
+        // індексів СПРАВЖНЬОЇ сітки. Рація, збережена на індексі 962 (у сітці
+        // на 1281 ділення це 148.025 МГц), підписувалась як 2108.000 МГц, а
+        // ванільна ручка крокувала її по 2.1 МГц за натиск.
+        //
+        // Спостережено на живому сервері 2026-09-01: після рестарту не
+        // піднявся нативний патч, і рушій роздав ванільну вісімку.
+        //
+        // Нулі означають "ефіру немає", і кожен споживач на клієнті вже вміє
+        // це читати: підпис падає на ванільний, клавіатура не відкривається.
+        float gBase  = 0;
+        float gStep  = 0;
+        int   gCount = 0;
+
+        if (OZR_Grid.Ready())
+        {
+            gBase  = OZR_Grid.Base();
+            gStep  = OZR_Grid.StepMHz();
+            gCount = OZR_Grid.Count();
+        }
+        else
+        {
+            OZR_Log.Warn("ether asked for, but the engine's table is not an even grid - telling the client there is no ether instead of describing the vanilla eight as one");
+        }
+
+        GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_GRID_RES,
+            new Param3<float, float, int>(gBase, gStep, gCount),
+            true, who);
+
+        // Гучності їдуть тим самим запитом, бо питання те саме: «що цей
+        // сервер про ефір думає». Окремим пакетом, а не полями в сітці, --
+        // сітка може бути відсутньою, а гучності діють однаково завжди.
+        //
+        // BOOL-АМИ, А НЕ ЧИСЛАМИ. Два прапорці їхали як float і int, і клієнт
+        // порівнював їх із нулем назад -- при тому, що поруч, у пакеті PTT,
+        // той самий модуль возить Param2<bool, bool>. Дві різні мови для
+        // одного типу в одному файлі -- це запрошення переплутати.
+        OZR_Settings st = OZR_Settings.Get();
+        if (st)
+        {
+            GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_AUDIO_RES,
+                new Param4<float, bool, int, bool>(st.SquelchGain, st.MirrorPtt, st.SquelchRange, st.PttFromCargo),
+                true, who);
+        }
+
+        OZR_Profiles cfg = OZR_Profiles.Get();
+        if (!cfg || !cfg.Radios)
+            return;
+
+        // По пакету на профіль. Їх десяток -- це десяток крихітних пакетів раз
+        // на сесію, і жодної довжини, яку можна переростити.
+        for (int i = 0; i < cfg.Radios.Count(); i++)
+        {
+            OZR_RadioProfile p = cfg.Radios[i];
+            GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_PROF_RES,
+                new Param4<string, float, float, float>(p.ClassName, p.MinMHz, p.MaxMHz, p.StepMHz),
+                true, who);
+        }
+    }
+
+    // ...і всім, хто вже в грі.
+    //
+    // Потрібно рівно після адмінської правки профілів: клієнтська тяга сама
+    // себе зупиняє на першій же вдалій сітці, тож без цієї розсилки кейпад і
+    // PTT в онлайну лишались би зі старими смугами до переспоручення.
+    static void Broadcast()
+    {
+        array<Man> players = new array<Man>();
+        GetGame().GetPlayers(players);
+
+        for (int i = 0; i < players.Count(); i++)
+        {
+            if (players[i])
+                SendTo(players[i].GetIdentity());
+        }
+
+        OZR_Log.Info("ether re-sent to " + players.Count().ToString() + " player(s) after an admin edit");
     }
 
     // Порахувати й записати. Кличеться і при старті, і після кожної правки
@@ -80,23 +219,14 @@ class OZR_EtherServer
     }
 
     // Чи те, що ми вивели, збігається з тим, що рушій справді роздає зараз.
+    // Порівняння і форматування живуть у 3_Game (OZR_Ether): їх робить і
+    // вкладка на клієнті, а два підрахунки одного числа розійшлись би тихо.
     static bool Matches()
     {
-        if (!s_Plan || !s_Plan.Ok || !OZR_Grid.Ready())
+        if (!OZR_Grid.Ready())
             return false;
 
-        if (OZR_Grid.Count() != s_Plan.Count)
-            return false;
-
-        // Допуск -- сота частина кроку: сітка ВИМІРЯНА, і вимір іде через
-        // float32, тож вимагати побітової рівності означало б вимагати
-        // неможливого.
-        float tol = s_Plan.StepMHz * 0.01;
-        if (Math.AbsFloat(OZR_Grid.Base() - s_Plan.BaseMHz) > tol)
-            return false;
-        if (Math.AbsFloat(OZR_Grid.StepMHz() - s_Plan.StepMHz) > tol)
-            return false;
-        return true;
+        return OZR_Ether.Same(s_Plan, OZR_Grid.Base(), OZR_Grid.StepMHz(), OZR_Grid.Count());
     }
 
     static string Running()
@@ -104,10 +234,6 @@ class OZR_EtherServer
         if (!OZR_Grid.Ready())
             return "not an even grid";
 
-        string s = OZR_Fmt.MHz(OZR_Grid.Base());
-        s += " to " + OZR_Fmt.MHz(OZR_Grid.MHzAt(OZR_Grid.Count() - 1));
-        s += " MHz, step " + OZR_Fmt.Step(OZR_Grid.StepMHz());
-        s += ", " + OZR_Grid.Count().ToString() + " divisions";
-        return s;
+        return OZR_Ether.DescribeGrid(OZR_Grid.Base(), OZR_Grid.StepMHz(), OZR_Grid.Count());
     }
 }

@@ -24,30 +24,49 @@ class OZR_ProfilesApplier : OZ_AdminCfgApplier
             return false;
         }
 
-        // Те, від чого профіль стає непрацездатним, а не просто дивним.
+        // ТОЙ САМИЙ ПРЕДИКАТ, ЩО Й СКРІЗЬ -- OZR_RadioProfile.Problem.
+        //
+        // Тут стояв власний, третій за рахунком набір перевірок, і він уже
+        // розійшовся із сусідніми: про MinMHz <= 0 він не питав. Профіль із
+        // нулем приймався, лягав на диск -- і на наступному завантаженні
+        // OZR_Profiles.Validate тихо його викидав, а OZR_Ether.Derive і зовсім
+        // відмовлявся вивести ефір. Адмін бачив «збережено», хоч правки не
+        // сталося. Аплікатор -- це межа: сюди приходить надіслане, а не
+        // показане, і вірити клієнтові не можна навіть адмінському.
+        //
+        // ВІДМОВЛЯЄМО ЦІЛКОМ, а не пропускаємо поганий рядок: адмін мусить
+        // побачити відмову, а не тихо втратити один профіль із набору.
         if (tmp.Radios)
         {
+            // Без ref: масив-локал і так володіє тим, що тримає, а `ref` на
+            // локалі -- зміряна пастка (сервер падав у чужій функції).
+            array<string> seen = new array<string>();
+
             for (int i = 0; i < tmp.Radios.Count(); i++)
             {
                 OZR_RadioProfile p = tmp.Radios[i];
                 if (!p)
-                    continue;
+                {
+                    OZR_Log.Warn("admin: RadioProfiles.json rejected: entry " + i.ToString() + " is empty");
+                    return false;
+                }
 
-                if (p.ClassName == "")
+                string bad = p.Problem();
+                if (bad != "")
                 {
-                    OZR_Log.Warn("admin: RadioProfiles.json rejected: profile " + i.ToString() + " has no class name");
+                    OZR_Log.Warn("admin: RadioProfiles.json rejected: " + p.Named() + " " + bad);
                     return false;
                 }
-                if (p.MaxMHz <= p.MinMHz)
+
+                // Два профілі на один клас -- це не помилка формату, а
+                // питання без відповіді: OZR_Profiles.For віддає перший, і
+                // другий не робить нічого мовчки.
+                if (seen.Find(p.ClassName) >= 0)
                 {
-                    OZR_Log.Warn("admin: RadioProfiles.json rejected: " + p.ClassName + " has an empty or inverted band");
+                    OZR_Log.Warn("admin: RadioProfiles.json rejected: " + p.ClassName + " is listed twice");
                     return false;
                 }
-                if (p.StepMHz <= 0)
-                {
-                    OZR_Log.Warn("admin: RadioProfiles.json rejected: " + p.ClassName + " has a step of zero");
-                    return false;
-                }
+                seen.Insert(p.ClassName);
             }
         }
 
@@ -57,16 +76,12 @@ class OZR_ProfilesApplier : OZ_AdminCfgApplier
         // Ефір іде слідом за профілями, завжди. Інакше на диску лишилась би
         // сітка, виведена з ПОПЕРЕДНІХ чисел.
         OZR_EtherServer.Publish(OZR_Profiles.Get());
+
+        // І доїжджає до тих, хто вже в грі. Клієнтська тяга зупиняється після
+        // першої вдалої сітки, тож без цього рядка кейпад і PTT у онлайну
+        // лишались би зі старими смугами до переспоручення -- при тому, що
+        // сервер уже рахує по нових.
+        OZR_EtherServer.Broadcast();
         return true;
-    }
-}
-
-class OZR_VppAdminCfg
-{
-    static const string CFG_PROFILES = "RadioProfiles";
-
-    static void Declare()
-    {
-        OZ_AdminCfg.Register(CFG_PROFILES, OZR_Const.PROFILES, new OZR_ProfilesApplier(), "radio");
     }
 }

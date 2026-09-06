@@ -77,11 +77,10 @@ class OZR_Profiles : OZR_ConfigBase
         Radios.Insert(p);
     }
 
-    override bool Migrate(int from)
-    {
-        Version = LatestVersion();
-        return true;
-    }
+    // Migrate тут НЕ перевизначений навмисно. Схема одна (SCHEMA_PROFILES == 1),
+    // і override, який побайтово повторював базову реалізацію, лише обіцяв
+    // переніс, якого не буває. Повернути його -- справа того дня, коли схема
+    // рушить із місця; OZR_Settings живе на тій самій базі й без нього.
 
     override void Validate(out int warnings)
     {
@@ -90,10 +89,43 @@ class OZR_Profiles : OZR_ConfigBase
         if (!Radios)
             Radios = new array<ref OZR_RadioProfile>();
 
-        // Без рівномірної сітки профілі рахувати нічим. Це не поломка: так
-        // виглядає непропатчений сервер, де рушій дає свою нерівну вісімку.
-        // Кажемо про це ОДИН раз і лишаємо профілі як є -- вони просто не
-        // застосуються.
+        // ЩО ТУТ ВИКИДАЄТЬСЯ, А ЩО ЛИШЕ ЗГАДУЄТЬСЯ.
+        //
+        // Викидається те, з чого не можна вивести НІЧОГО: порожній елемент,
+        // профіль без імені, порожня чи перевернута смуга, нульовий крок,
+        // межа понад стелю. Такий профіль зламав би і виведення ефіру, і саму
+        // рацію. Перелік не тут -- він один на весь мод, у
+        // OZR_RadioProfile.Problem.
+        //
+        // ПЕРШИМ, І НЕЗАЛЕЖНО ВІД СІТКИ. Раніше цей цикл стояв ПІСЛЯ виходу
+        // «сітка нерівна», тобто на непропатченому сервері не виконувався
+        // взагалі -- і порожній елемент масиву доживав до першого ж
+        // OZR_GridReq, який розіменовував його без перевірки.
+        for (int i = Radios.Count() - 1; i >= 0; i--)
+        {
+            OZR_RadioProfile p = Radios[i];
+
+            if (!p)
+            {
+                OZR_Log.Warn("an empty entry in the radio profile list dropped");
+                Radios.Remove(i);
+                warnings++;
+                continue;
+            }
+
+            string bad = p.Problem();
+            if (bad != "")
+            {
+                OZR_Log.Warn("profile " + p.Named() + " " + bad + " - dropped");
+                Radios.Remove(i);
+                warnings++;
+            }
+        }
+
+        // Далі -- лише те, що має сенс проти ЖИВОЇ сітки. Без рівномірної
+        // сітки рахувати нічим; це не поломка, а те, як виглядає
+        // непропатчений сервер із ванільною нерівною вісімкою. Кажемо про це
+        // ОДИН раз і лишаємо профілі як є -- вони просто не застосуються.
         if (!OZR_Grid.Ready())
         {
             string flat = "the engine's frequency table is not an even grid (";
@@ -107,82 +139,27 @@ class OZR_Profiles : OZR_ConfigBase
         float lo = OZR_Grid.Base();
         float hi = OZR_Grid.MHzAt(OZR_Grid.Count() - 1);
 
-        // ЩО ТУТ ВИКИДАЄТЬСЯ, А ЩО ЛИШЕ ЗГАДУЄТЬСЯ.
-        //
-        // Викидається те, з чого не можна вивести НІЧОГО: профіль без імені,
-        // порожня чи перевернута смуга, нульовий крок. Такий профіль зламав би
-        // і виведення ефіру, і саму рацію.
-        //
-        // Все інше лишається як написано. Раніше тут обрізали межі під сітку й
-        // округляли крок до її кроку -- і це було правильно, поки сітка була
-        // чимось зовнішнім. Тепер сітка ВИВОДИТЬСЯ з цих самих чисел, і
-        // переписати їх під стару сітку означало б знищити те, з чого будують
-        // нову: адмін просить 86 МГц, ми обрізаємо до 136, ефір виводиться з
-        // 136, і 86 не настає ніколи. Тому тут лише кажуть вголос, що профіль
-        // випереджає ефір, а обрізає використання (OZR_Grid.Window) -- до
-        // наступного старту сервера.
-        for (int i = Radios.Count() - 1; i >= 0; i--)
+        // Межі лишаються як написано. Раніше тут обрізали їх під сітку й
+        // округляли крок -- і це було правильно, поки сітка була чимось
+        // зовнішнім. Тепер сітка ВИВОДИТЬСЯ з цих самих чисел, і переписати їх
+        // під стару сітку означало б знищити те, з чого будують нову: адмін
+        // просить 86 МГц, ми обрізаємо до 136, ефір виводиться з 136, і 86 не
+        // настає ніколи. Тому тут лише кажуть вголос, що профіль випереджає
+        // ефір, а обрізає ВИКОРИСТАННЯ (OZR_Grid.Window) -- до наступного
+        // старту сервера.
+        for (int k = 0; k < Radios.Count(); k++)
         {
-            OZR_RadioProfile p = Radios[i];
-
-            if (!p || p.ClassName == "")
-            {
-                OZR_Log.Warn("radio profile without a classname dropped");
-                Radios.Remove(i);
-                warnings++;
+            OZR_RadioProfile q = Radios[k];
+            if (q.MinMHz >= lo && q.MaxMHz <= hi)
                 continue;
-            }
 
-            // Нижня межа мусить бути ДОДАТНОЮ, і це не те саме, що
-            // «непорожня смуга».
-            //
-            // Профіль 0..150 проходив перевірку нижче -- нуль менший за сто
-            // п'ятдесят, смуга не порожня. А потім із нього виводили ефір:
-            // база стає нулем, і сітка на 0.0125 МГц від нуля до верху
-            // найширшого профілю -- це дванадцять тисяч ділень замість тисячі
-            // з гаком, тобто ефір, розтягнутий на частоти, яких рація не має.
-            // Нуль тут -- це майже завжди незаповнене поле, а не намір.
-            if (p.MinMHz <= 0)
-            {
-                string low = "profile " + p.ClassName + " starts at " + OZR_Fmt.MHz(p.MinMHz);
-                low += " - a band has to start above zero; dropped";
-                OZR_Log.Warn(low);
-                Radios.Remove(i);
-                warnings++;
-                continue;
-            }
-
-            if (p.MinMHz >= p.MaxMHz)
-            {
-                string empty = "profile " + p.ClassName + " has an empty band (";
-                empty += OZR_Fmt.MHz(p.MinMHz) + ".." + OZR_Fmt.MHz(p.MaxMHz) + ") - dropped";
-                OZR_Log.Warn(empty);
-                Radios.Remove(i);
-                warnings++;
-                continue;
-            }
-
-            if (p.StepMHz <= 0)
-            {
-                string nostep = "profile " + p.ClassName + " has no step - dropped";
-                OZR_Log.Warn(nostep);
-                Radios.Remove(i);
-                warnings++;
-                continue;
-            }
-
-            // Не помилка, а стан: ефір ще не наздогнав профіль. Рація працює на
-            // тій частині смуги, яка вже існує, і на всій -- після рестарту.
-            if (p.MinMHz < lo || p.MaxMHz > hi)
-            {
-                string ahead = "profile " + p.ClassName + " asks for ";
-                ahead += OZR_Fmt.MHz(p.MinMHz) + ".." + OZR_Fmt.MHz(p.MaxMHz);
-                ahead += " MHz while the running ether is " + OZR_Fmt.MHz(lo);
-                ahead += ".." + OZR_Fmt.MHz(hi);
-                ahead += " - it works on the overlap until the server is restarted";
-                OZR_Log.Warn(ahead);
-                warnings++;
-            }
+            string ahead = "profile " + q.ClassName + " asks for ";
+            ahead += OZR_Fmt.MHz(q.MinMHz) + ".." + OZR_Fmt.MHz(q.MaxMHz);
+            ahead += " MHz while the running ether is " + OZR_Fmt.MHz(lo);
+            ahead += ".." + OZR_Fmt.MHz(hi);
+            ahead += " - it works on the overlap until the server is restarted";
+            OZR_Log.Warn(ahead);
+            warnings++;
         }
     }
 

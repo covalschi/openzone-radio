@@ -25,7 +25,11 @@ class OZR_Audio
     // 1.0 -- «нічого не чіпати». Саме тому одиниця, а не нуль: поле, яке
     // забули заповнити, мусить лишати гру такою, якою її зробила ваніль.
     private static float s_SquelchGain = 1.0;
-    private static float s_MirrorPtt   = 1.0;
+
+    // BOOL, а не float. Прапорець їхав числом і порівнювався з нулем назад,
+    // хоч сусідній пакет того ж модуля вже возить Param2<bool, bool>: дві
+    // мови для одного типу в одному моді -- це запрошення переплутати.
+    private static bool s_MirrorPtt = true;
 
     // Чи сервер уже сказав своє. До цього моменту значення вище -- лише
     // умовчання, і діяти за ними означало б, наприклад, переписати гравцеві
@@ -48,7 +52,7 @@ class OZR_Audio
 
     static bool MirrorPtt()
     {
-        return s_MirrorPtt > 0;
+        return s_MirrorPtt;
     }
 
     static bool Got()
@@ -66,9 +70,9 @@ class OZR_Audio
         return s_PttFromCargo;
     }
 
-    static void SetGains(float squelch, float mirror, int range, int cargo)
+    static void SetGains(float squelch, bool mirror, int range, bool cargo)
     {
-        s_PttFromCargo = (cargo > 0);
+        s_PttFromCargo = cargo;
 
         int rung = OZR_Const.SquelchRung(range);
         if (rung != range)
