@@ -17,6 +17,104 @@
 // Рація без профілю лишається ванільною в частині КРОКУ, але індекс возить
 // однаково: підпис має бути правдивим у будь-якої рації.
 
+// ДЕ РІЧ ЛЕЖИТЬ ВІДНОСНО ЛЮДИНИ -- одним числом, для всіх, хто питає.
+//
+// 3 руки, 2 ланцюжок причеплень до персонажа, 1 десь у карго при ньому,
+// 0 не при людині взагалі: земля, ящик, транспорт, чужий склад.
+//
+// ОКРЕМИМ ДОМОМ, а не методом рації, і причина конкретна: те саме питання
+// ставить ПЛАТА В КПК (ТЗ-4 R-E2.1 -- приймає лише коли КПК у руках або
+// надітий), а питає вона не про себе, а про ПРИЛАД, у якому сидить, тобто
+// про річ, яка передавачем не є. Друга копія цього обходу розійшлася б із
+// першою рівно так, як уже розходились «руки» й «слот» у резолверах КПК.
+class OZR_Reach
+{
+    // Вісім ланок -- стеля з ТЗ-4 R-E1.8: цикл у батьках не має вішати кадр.
+    // Реальний ланцюжок -- три-чотири (плата -> КПК -> розвантаження ->
+    // гравець), тож вісім не обмежують нікого чесного.
+    private static const int HOPS_MAX = 8;
+
+    // ЛАНЦЮЖОК ДО ПЕРСОНАЖА, а не одне місце (ТЗ-4 R-E1.5, R-E1.8).
+    //
+    // Перша версія питала лише, ЧИМ прицеплена сама рація. Цього мало:
+    // рація на слоті розвантаження, яке лежить у рюкзаку, і плата в КПК,
+    // що лежить у рюкзаку, обидві відповідали «ATTACHMENT» і говорили --
+    // а мусять мовчати, бо вище них є ланка «в карго». Тому піднімаємось
+    // по батьках до персонажа й дивимось на КОЖНУ ланку.
+    //
+    // Ранг -- найгірша ланка на шляху: руки самої речі дають 3; далі
+    // будь-яке ATTACHMENT/HANDS не псує, а перше ж CARGO опускає до 1.
+    static int RankOf(EntityAI it)
+    {
+        if (!it)
+            return 0;
+
+        if (!it.GetInventory())
+            return 0;
+
+        InventoryLocation loc = new InventoryLocation;
+        if (!it.GetInventory().GetCurrentInventoryLocation(loc))
+            return 0;
+
+        int first = loc.GetType();
+        if (first == InventoryLocationType.HANDS)
+            return 3;
+
+        int rank = 0;
+        if (first == InventoryLocationType.ATTACHMENT)
+            rank = 2;
+        else if (first == InventoryLocationType.CARGO)
+            rank = 1;
+        else
+            return 0;
+
+        EntityAI parent = loc.GetParent();
+        int hops = 0;
+
+        while (parent && hops < HOPS_MAX)
+        {
+            // Дійшли до персонажа -- ланцюжок зійшовся.
+            if (Man.Cast(parent))
+                break;
+
+            if (!parent.GetInventory())
+                return 0;
+
+            InventoryLocation up = new InventoryLocation;
+            if (!parent.GetInventory().GetCurrentInventoryLocation(up))
+                return 0;
+
+            int kind = up.GetType();
+
+            if (kind == InventoryLocationType.CARGO || kind == InventoryLocationType.PROXYCARGO)
+                rank = 1;
+            else if (kind != InventoryLocationType.ATTACHMENT && kind != InventoryLocationType.HANDS)
+                return 0;
+
+            parent = up.GetParent();
+            hops++;
+        }
+
+        // Ланцюжок не дійшов до людини: земля, ящик, транспорт, або вісім
+        // ланок -- усе це «не при тобі».
+        if (!parent || !Man.Cast(parent))
+            return 0;
+
+        return rank;
+    }
+
+    // «При тобі» одним словом: у руках або надіте, але НЕ в карго.
+    //
+    // Рівно межа ТЗ-4 R-E2.1/H15 і рядка таблиці R-E1.5 «Плата в КПК, КПК у
+    // рюкзаку -- молчит». Слот тут БУДЬ-ЯКИЙ, і це навмисне: вимога каже
+    // «надет в любой слот», тож прилад на слоті чужої розвантаги при тобі
+    // так само, як на власному слоті носіння.
+    static bool AtHand(EntityAI it)
+    {
+        return RankOf(it) >= 2;
+    }
+}
+
 modded class TransmitterBase
 {
     // -1 -- «сервер ще нічого не сказав». Нуль не годиться: нульовий індекс --
@@ -248,21 +346,6 @@ modded class TransmitterBase
     // його не дозволив: тоді рація в рюкзаку не існує для гашетки взагалі.
     int OZR_SpeakRank(bool cargoAllowed)
     {
-        // ЛАНЦЮЖОК ДО ПЕРСОНАЖА, а не одне місце (ТЗ-4 R-E1.5, R-E1.8).
-        //
-        // Перша версія питала лише, ЧИМ прицеплена сама рація. Цього мало:
-        // рація на слоті розвантаження, яке лежить у рюкзаку, і плата в КПК,
-        // що лежить у рюкзаку, обидві відповідали «ATTACHMENT» і говорили --
-        // а мусять мовчати, бо вище них є ланка «в карго». Тому піднімаємось
-        // по батьках до персонажа й дивимось на КОЖНУ ланку.
-        //
-        // Ранг -- найгірша ланка на шляху: руки самої рації дають 3; далі
-        // будь-яке ATTACHMENT/HANDS не псує, а перше ж CARGO опускає до 1
-        // (якщо карго дозволене) або до 0.
-        //
-        // Вісім ланок -- стеля з R-E1.8: цикл у батьках не має вішати кадр.
-        // Реальний ланцюжок -- три-чотири (плата -> КПК -> розвантаження ->
-        // гравець), тож вісім не обмежують нікого чесного.
         // Знеструмлена рація -- не кандидат, і це правило СПІЛЬНЕ для обох
         // сторін, тому живе тут, а не в тому, хто питає.
         //
@@ -274,57 +357,12 @@ modded class TransmitterBase
         if (!OZR_IsPowered())
             return 0;
 
-        if (!GetInventory())
-            return 0;
+        // МІСЦЕ рахує OZR_Reach -- одним домом на гашетку рації й на прийом
+        // плати в КПК (ТЗ-4 R-E1.5, R-E1.8, R-E2.1).
+        int rank = OZR_Reach.RankOf(this);
 
-        InventoryLocation loc = new InventoryLocation;
-        if (!GetInventory().GetCurrentInventoryLocation(loc))
-            return 0;
-
-        int first = loc.GetType();
-        if (first == InventoryLocationType.HANDS)
-            return 3;
-
-        int rank = 0;
-        if (first == InventoryLocationType.ATTACHMENT)
-            rank = 2;
-        else if (first == InventoryLocationType.CARGO)
-            rank = 1;
-        else
-            return 0;
-
-        EntityAI parent = loc.GetParent();
-        int hops = 0;
-
-        while (parent && hops < 8)
-        {
-            // Дійшли до персонажа -- ланцюжок зійшовся.
-            if (Man.Cast(parent))
-                break;
-
-            if (!parent.GetInventory())
-                return 0;
-
-            InventoryLocation up = new InventoryLocation;
-            if (!parent.GetInventory().GetCurrentInventoryLocation(up))
-                return 0;
-
-            int kind = up.GetType();
-
-            if (kind == InventoryLocationType.CARGO || kind == InventoryLocationType.PROXYCARGO)
-                rank = 1;
-            else if (kind != InventoryLocationType.ATTACHMENT && kind != InventoryLocationType.HANDS)
-                return 0;
-
-            parent = up.GetParent();
-            hops++;
-        }
-
-        // Ланцюжок не дійшов до людини: земля, ящик, транспорт, або вісім
-        // ланок -- усе це «не при тобі».
-        if (!parent || !Man.Cast(parent))
-            return 0;
-
+        // Карго повертає нуль, коли сервер його не дозволив: тоді рація в
+        // рюкзаку не існує для гашетки взагалі.
         if (rank == 1 && !cargoAllowed)
             return 0;
 
