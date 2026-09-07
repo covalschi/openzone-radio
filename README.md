@@ -114,7 +114,10 @@ function with `base + index * step`, which removes the table, the mask and the
 power-of-two limit together.
 
 **Server only, by design.** The proxy patches nothing unless the process was started
-with `-server`. A stock client against a patched server was tested and plays normally.
+with `-server`, **or** the executable is the dedicated server binary
+(`DayZServer_x64.exe`) by name — the dedicated server needs no `-server` flag to run,
+so the gate checks the executable name too, not the command line alone. A stock client
+against a patched server was tested and plays normally.
 
 Build and install it from [`native/README.md`](native/README.md):
 
@@ -157,7 +160,11 @@ All of it is JSON in the server's `-profiles` directory, under `OpenZone/`:
 
 `OZ_Radio_Frequencies.json` is **not written by hand**. The mod derives it from the
 profiles an admin edits — the lowest bottom, the highest top, and the greatest common
-divisor of every step — so the ether is always exactly what the radios ask for.
+divisor of every step — so the ether is always exactly what the radios ask for. If
+`OZ_Radio_Profiles.json` is present but does not parse, the mod runs on its built-in
+profiles instead and leaves `OZ_Radio_Frequencies.json` untouched; the log says "ether
+not derived: the radio profiles on disk did not parse ... fix `OZ_Radio_Profiles.json`
+and restart".
 
 The native library reads it once, at process start, because that is when the patch is
 applied: a change takes effect on the **next** server start, and the library says so in

@@ -123,8 +123,9 @@ Each native is registered **twice**: once for `ItemTransmitter`, once for
 ## How these were found, so they can be re-found after a patch
 
 No address above is a magic constant; each came out of a chain that can be re-run
-against a new build. Scripts live in the scratchpad (`findfreq.py`, `freqxref.py`,
-`freqfunc.py`, `freqnatives.py`, `freqreg.py`, `freqimpl.py`, `dzdis.py`).
+against a new build, using the concrete steps below. The one-off scripts that ran this
+chain lived only in a scratch directory and are gone now (`forwards.h` records that the
+scratch generator no longer exists); the steps themselves are what carries forward.
 
 1. Boot the stand, read the measured frequencies out of `OZR_Bands` in the log.
 2. Pack them as little-endian `float32` and search the binaries. One hit each.
@@ -274,10 +275,12 @@ nothing reads.
 server out of the same directory and from the same `DayZDiag_x64.exe`, so a proxy
 that does not check the command line patches both — which makes every test
 meaningless, because the whole question is whether a *stock* client works against
-a patched server. `GetCommandLineW()` answers it. (This paragraph and the one
-above are what survived of `docs/more-frequencies-plan.md`, an executed plan
-document deleted 2026-09-06 under the series' rule that plans do not outlive
-their execution.)
+a patched server. `GetCommandLineW()` answers it for a Diag build; a bare
+`DayZServer_x64.exe` is accepted by executable name (`GetModuleFileNameW`) as well,
+because the dedicated server needs no `-server` flag to run and would otherwise never
+pass the gate. (This paragraph and the one above are what survived of
+`docs/more-frequencies-plan.md`, an executed plan document deleted 2026-09-06 under
+the series' rule that plans do not outlive their execution.)
 
 ## Still unverified
 
