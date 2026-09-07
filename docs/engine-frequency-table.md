@@ -266,7 +266,19 @@ works too, but then a relocated array has to sit within ±2 GB of the image so t
 - set indices past 7 — already possible, the field is unbounded and never clamped;
 - draw the frequency label itself, because `GetTunedFrequency()` on the client
   still returns `table[index & 7]` and will be wrong. Vanilla shows that value in
-  `ActionTuneFrequencyOnGround` and `ItemActionsWidget`, so both want overriding.
+  `ItemActionsWidget`, which the mod overrides (`OZR_ItemActionsWidget.c`). It also
+  shows it in `ActionTuneFrequencyOnGround`, and that one needs **no** override.
+
+  Settled 2026-09-07 (task 64), by the game's own sources and by the stand. The action
+  casts its target to `Land_Radio_PanelBig` in all three of `ActionCondition`,
+  `OnActionInfoUpdate` and `OnExecuteServer`, so a static panel is the only thing it can
+  ever describe. That panel is `Land_Radio_PanelBig : StaticTransmitter :
+  AdvancedCommunication : EntityAI` — a different branch from `TransmitterBase :
+  ItemTransmitter`, which is what this mod modifies — so the widened band never reaches
+  it whatever we do. And the mod does not profile it: the stand's own
+  `OZ_Radio_Profiles.json` holds exactly the eleven classes the boot counts
+  (`profiles=11`), all ten `OZ_Radio_*` handhelds plus `OZ_Module_Radio`, and no static
+  transmitter. An override would have nothing to correct.
 
 The client's wrong local float is harmless: it only mis-keys an entry in a map
 nothing reads.
