@@ -784,7 +784,7 @@ class OZR_PageRadio : OZ_PdaPage
         else if (m_State.FreeCells == 0)
             SetText("BookFree", "#STR_OZR_MEMORY_FULL");
         else if (m_State.FreeCells > 0)
-            SetText("BookFree", m_State.FreeCells.ToString() + " free");
+            SetText("BookFree", m_State.FreeCells.ToString() + " " + T("STR_OZR_FREE"));
         else
             SetText("BookFree", "");
     }

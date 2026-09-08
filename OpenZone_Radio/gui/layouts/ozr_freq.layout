@@ -19,6 +19,10 @@
 //
 // Імена читає OZR_FreqMenu.c: Card, TitleText, FreqText, BandText, HintText,
 // Btn0..Btn9, BtnClear, BtnDot, BtnGo.
+//
+// BtnGoLabel правився ТУТ, не в json-джерелі: генератора для цього файлу
+// немає (задача 80, огляд review-task-80.md, знахідка 1), тож правка
+// розмітки руками -- єдиний шлях. Веде на "#STR_OZR_KEYPAD_TUNE".
 
 PanelWidgetClass Card {
  visible 1
@@ -847,7 +851,7 @@ PanelWidgetClass Card {
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   text "TUNE"
+   text "#STR_OZR_KEYPAD_TUNE"
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
    "exact text size" 26

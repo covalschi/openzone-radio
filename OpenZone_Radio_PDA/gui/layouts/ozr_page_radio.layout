@@ -4,6 +4,12 @@
 // -- правити генератор, не це», і того скрипта в репозиторії немає: він жив у
 // тимчасовому каталозі й пішов разом із ним. Файл підтримується руками.
 //
+// Саме тому п'ять підписів секцій (StatusLbl, FreqLbl, BandLbl, SetLbl,
+// NameLbl) правились ТУТ, а не в json-джерелі генератора (задача 80, огляд
+// review-task-80.md, знахідка 1): для файлу без генератора це не виняток із
+// «згенероване руками не правимо», а єдиний доступний шлях. Кожен тепер веде
+// на "#STR_OZR_..._TITLE" за зразком BookLbl нижче.
+//
 // Списку каналів тут немає: плата налаштовується числом, як і будь-яка
 // рація. А книжка частот -- це імена, які дав САМ ГРАВЕЦЬ, і живуть вони на
 // носії, а не в конфігу сервера: їх можна загубити разом із дискетою.
@@ -32,7 +38,7 @@ FrameWidgetClass OZ_PageRadio {
    hexactsize 1
    vexactsize 1
    ignorepointer 1
-   text "STATUS"
+   text "#STR_OZR_STATUS_TITLE"
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
    "exact text size" 13
@@ -64,7 +70,7 @@ FrameWidgetClass OZ_PageRadio {
    hexactsize 1
    vexactsize 1
    ignorepointer 1
-   text "TUNED TO"
+   text "#STR_OZR_TUNED_TO_TITLE"
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
    "exact text size" 13
@@ -96,7 +102,7 @@ FrameWidgetClass OZ_PageRadio {
    hexactsize 1
    vexactsize 1
    ignorepointer 1
-   text "BAND / STEP / REACH"
+   text "#STR_OZR_BAND_STEP_TITLE"
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
    "exact text size" 13
@@ -178,7 +184,7 @@ FrameWidgetClass OZ_PageRadio {
    hexactsize 1
    vexactsize 1
    ignorepointer 1
-   text "SET A FREQUENCY"
+   text "#STR_OZR_SET_FREQ_TITLE"
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
    "exact text size" 13
@@ -353,7 +359,7 @@ FrameWidgetClass OZ_PageRadio {
    hexactsize 1
    vexactsize 1
    ignorepointer 1
-   text "NAME THIS FREQUENCY"
+   text "#STR_OZR_NAME_FREQ_TITLE"
    font "gui/fonts/sdf_MetronBook24"
    "exact text" 1
    "exact text size" 13
