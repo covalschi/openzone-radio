@@ -17,9 +17,16 @@ class OZR_FreqMenu extends UIScriptedMenu
     private TextWidget m_Hint;
     private Widget     m_Card;
 
-    // Набране гравцем, як рядок: «145.1» -- це стан набору, а не число.
-    // Числом воно стає лише в мить підтвердження.
+    // НАБРАНЕ -- ЦЕ НАМІР, і рації він не стосується, поки не натиснуто TUNE.
+    //
+    // Рядок, а не число: «145.1» -- це стан набору. Числом воно стає лише в
+    // мить підтвердження. Порожній рядок означає «нічого не набрано», і тоді
+    // на табло світиться те, на чому рація стоїть насправді.
     private string m_Typed = "";
+
+    // Набране поставили СТРІЛКИ, а не пальці: перша ж цифра тоді починає набір
+    // з чистого, а не дописується в хвіст готовому числу («145.500» + «7»).
+    private bool   m_Dialled = false;
     private float  m_Since = 0;
 
     // Підказка тримається В ПОЛІ, а не пишеться просто у віджет. Інакше
@@ -295,6 +302,14 @@ class OZR_FreqMenu extends UIScriptedMenu
             m_Title.SetText(title);
         }
 
+        // ТАБЛО ОДНЕ, І ЗНАЧЕНЬ У НЬОГО ДВА. Поки щось набрано або накручено --
+        // це НАМІР, і він чекає TUNE. Порожній набір означає «наміру немає», і
+        // тоді світиться те, на чому рація стоїть насправді.
+        //
+        // Другого рядка під налаштовану частоту тут немає, і це видно: поки
+        // намір на табло, де стоїть рація, не показує ніщо. Розкладка ведеться
+        // руками, тож окреме поле -- окреме рішення власника, а не побічний
+        // наслідок цієї правки.
         if (m_Freq)
         {
             string shown = m_Typed;
@@ -384,6 +399,7 @@ class OZR_FreqMenu extends UIScriptedMenu
             int n = m_Typed.Length();
             if (n > 0)
                 m_Typed = m_Typed.Substring(0, n - 1);
+            m_Dialled = false;
             Paint();
             return true;
         }
@@ -392,6 +408,7 @@ class OZR_FreqMenu extends UIScriptedMenu
         {
             if (m_Typed != "" && m_Typed.IndexOf(".") < 0)
                 m_Typed = m_Typed + ".";
+            m_Dialled = false;
             Paint();
             return true;
         }
@@ -401,6 +418,14 @@ class OZR_FreqMenu extends UIScriptedMenu
         {
             // Почав набирати -- відмова більше не актуальна.
             m_HintKey = "#STR_OZR_KEYPAD_HINT";
+
+            // Число на табло поставили стрілки -- цифра починає СВІЙ набір, а
+            // не дописується в хвіст готовому «145.500».
+            if (m_Dialled)
+            {
+                m_Typed   = "";
+                m_Dialled = false;
+            }
 
             // Довжину обмежуємо: «1451250000» не частота, а промах по клавіші,
             // помножений на десять.
@@ -424,12 +449,12 @@ class OZR_FreqMenu extends UIScriptedMenu
             return;
         }
 
-        // Нічого не набрано -- значить частоту вже виставили стрілками, і
-        // підтверджувати нема чого. TUNE тут означає просто «готово», і
-        // мовчазна кнопка на цьому місці читається як зламана.
+        // Нічого не набрано й нічого не накручено -- підтверджувати нема чого.
+        // TUNE тут означає просто «готово», і мовчазна кнопка на цьому місці
+        // читалась би як зламана.
         if (m_Typed == "")
         {
-            OZR_Log.Dbg("freq keypad: nothing typed, closing");
+            OZR_Log.Dbg("freq keypad: nothing dialled, closing");
             Close();
             return;
         }
@@ -443,11 +468,12 @@ class OZR_FreqMenu extends UIScriptedMenu
             return;
         }
 
-        int idx = OZR_ClientGrid.IndexOf(m_Typed.ToFloat());
+        int idx = Dialled();
         if (idx < lo || idx > hi)
         {
             OZR_Log.Dbg("freq keypad: commit refused - " + m_Typed + " is outside this set's band");
             m_Typed   = "";
+            m_Dialled = false;
             m_HintKey = "#STR_OZR_KEYPAD_OUT";
             Paint();
             return;
@@ -459,9 +485,24 @@ class OZR_FreqMenu extends UIScriptedMenu
         // індекс на клієнті оновиться лише коли сервер його поверне, і
         // домальовувати очікуване значення означало б показати те, чого ще
         // немає -- а на відмову сервера воно й не з'явиться.
-        m_Typed = "";
+        m_Typed   = "";
+        m_Dialled = false;
         OZR_Log.Dbg("freq keypad: commit done, closing");
         Close();
+    }
+
+    // Набране, у діленнях ефіру. -1, коли не набрано нічого або набране не
+    // читається числом.
+    private int Dialled()
+    {
+        if (m_Typed == "")
+            return -1;
+
+        float mhz = m_Typed.ToFloat();
+        if (mhz <= 0)
+            return -1;
+
+        return OZR_ClientGrid.IndexOf(mhz);
     }
 
     private void Send(int idx)
@@ -473,6 +514,11 @@ class OZR_FreqMenu extends UIScriptedMenu
     // Крок на один СВІЙ канал, по колу відрізка. Набирати частоту цілком
     // заради сусіднього каналу безглуздо, а що таке «сусідній», профіль уже
     // знає.
+    //
+    // СТРІЛКА КРУТИТЬ ТАБЛО, А НЕ РАЦІЮ (рішення власника 2026-09-09). Раніше
+    // вона слала настройку одразу, тож на клавіатурі жило два різні правила:
+    // цифри чекали TUNE, а «+» і «-» ходили повз нього. Тепер правило одне --
+    // набрав чи накрутив, тоді TUNE.
     private void Nudge(int dir)
     {
         if (!m_Radio || !m_Profile)
@@ -484,7 +530,11 @@ class OZR_FreqMenu extends UIScriptedMenu
         if (!OZR_ClientGrid.Window(m_Profile, lo, hi, stride))
             return;
 
-        int cur = m_Radio.OZR_ShownIndex();
+        // Крутимо від НАБРАНОГО, якщо набрано щось осмислене: інакше «набрав
+        // 145.5, тисну +» відкидало б назад на ту частоту, де рація стоїть.
+        int cur = Dialled();
+        if (cur < 0)
+            cur = m_Radio.OZR_ShownIndex();
         if (cur < lo || cur > hi)
             cur = lo;
 
@@ -509,8 +559,12 @@ class OZR_FreqMenu extends UIScriptedMenu
             OZR_Log.Dbg(dbg);
         }
 
-        m_Typed = "";
-        Send(want);
+        // Накручене лягає туди ж, куди й набране: на табло і в намір. Рацію
+        // рухає TUNE.
+        m_Typed   = OZR_Fmt.MHz(OZR_ClientGrid.MHzAt(want));
+        m_Dialled = true;
+        m_HintKey = "#STR_OZR_KEYPAD_HINT";
+        Paint();
     }
 
     // Малюємо те, що СПРАВДІ на рації, а не те, що попросили: сервер може
