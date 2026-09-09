@@ -22,6 +22,44 @@ class OZ_Module_Radio extends TransmitterBase
     override void OnWorkStart() { }
     override void OnWorkStop()  { }
 
+    // ВАНІЛЬНА ДІЯ «НАСТРОЇТИ», ЯКА НА ПЛАТІ ПАДАЄ.
+    //
+    // TransmitterBase.SetActions вішає ActionTuneFrequency на КОЖЕН передавач
+    // (transmitterbase.c:137), а її умова робить
+    // transmitter.GetCompEM().IsWorking() без жодної перевірки
+    // (actiontunefrequency.c:45). Енергоменеджера в плати немає за
+    // конструкцією -- її живить КПК, -- тож плата в руках давала
+    // «NULL pointer to instance, Class 'ActionTuneFrequency',
+    // Function 'ActionCondition'» на КОЖЕН кадр (лог клієнта власника
+    // 2026-09-09, шість винятків за 0.2 с).
+    //
+    // Знімаємо саме цю дію, а не ставимо їй власну умову: платі вона не
+    // потрібна взагалі -- частоту крутить сторінка КПК. Дві сусідні ванільні
+    // дії безпечні самі: і ActionTurnOnTransmitter, і ActionTurnOffTransmitter
+    // питають item.HasEnergyManager() перед менеджером.
+    //
+    // ВАНІЛЬНИЙ RemoveAction БЕЗ ЗАХИСТУ: він бере g_Game.GetPlayer() і одразу
+    // питає в нього менеджер дій (itembase.c:366-369). SetActions кличеться
+    // ліниво з GetActions, тобто вже при живому гравцеві й лише на клієнті, --
+    // але повторювати чужу ваду в сусідньому рядку не варто, тому питаємо
+    // самі.
+    override void SetActions()
+    {
+        super.SetActions();
+
+        if (!GetGame())
+            return;
+
+        PlayerBase me = PlayerBase.Cast(GetGame().GetPlayer());
+        if (!me)
+            return;
+
+        if (!me.GetActionManager())
+            return;
+
+        RemoveAction(ActionTuneFrequency);
+    }
+
     // Чи тримають зараз PTT. Тримаємо ЦЕ, а не питаємо рушій: живлення
     // звіряється подіями, і без власної пам'яті звірка або затикала б людину
     // посеред фрази, або лишала б рот відкритим.
