@@ -7,6 +7,12 @@ be decided by a person.
 
 *Українською — нижче, у другій половині файла.*
 
+> **Superseded 2026-09-09.** The owner decided to publish **every** OpenZone mod, the
+> two glue mods included: OpenZone Core and OpenZone PDA go to the Workshop as well, so
+> a subscriber can satisfy the hard dependencies there. The same `ZoneProtocol` key now
+> signs the whole series (`keys/` in every repository, private half never committed),
+> and every repository carries `packaging/` and `package.ps1` copied from this one.
+
 ## Ready
 
 - **Only `@OpenZone_Radio` goes to the Workshop.** Owner's decision 2026-09-01. The two
@@ -107,6 +113,12 @@ The owner drives Publisher — the GUI tools are not run from here.
 ---
 
 # Публікація в Steam Workshop
+
+> **Скасовано 2026-09-09.** Власник вирішив публікувати **кожен** мод OpenZone, обидві
+> склейки включно: OpenZone Core і OpenZone PDA теж ідуть у Workshop, тож жорсткі
+> залежності підписник задовольнить там само. Той самий ключ `ZoneProtocol` тепер
+> підписує всю серію (`keys/` у кожному репозиторії, приватна половина не комітиться),
+> і кожен репозиторій має `packaging/` та `package.ps1`, скопійовані звідси.
 
 Що готове, що ні, і що мусить вирішити людина. Написано 2026-09-01 під час підготовки до
 першої публікації.
