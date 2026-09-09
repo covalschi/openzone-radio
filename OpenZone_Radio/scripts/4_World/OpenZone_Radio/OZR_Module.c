@@ -488,9 +488,14 @@ class OZR_Module : CF_ModuleWorld
         if (type != CallType.Client)
             return;
 
-        Param4<float, bool, int, bool> p = new Param4<float, bool, int, bool>(1.0, true, OZR_Const.SQUELCH_RANGE_DEFAULT, true);
+        Param5<float, bool, int, bool, bool> p = new Param5<float, bool, int, bool, bool>(1.0, true, OZR_Const.SQUELCH_RANGE_DEFAULT, true, false);
         if (!ctx.Read(p))
             return;
+
+        // НАЙПЕРШЕ: рядки нижче вже мусять на нього зважати -- той самий
+        // порядок, що на сервері в OnMissionStart. До цієї миті клієнтський
+        // OZR_Log.Dbg не писав нічого й ніде (див. OZR_EtherServer.SendTo).
+        OZR_Log.SetDebug(p.param5);
 
         OZR_Audio.SetGains(p.param1, p.param2, p.param3, p.param4);
 
@@ -498,6 +503,9 @@ class OZR_Module : CF_ModuleWorld
         got += " within " + OZR_Audio.SquelchRung().ToString() + " m";
         got += ", mirror ptt onto the voice key = " + p.param2.ToString();
         got += ", ptt from cargo = " + p.param4.ToString();
+        // Рівень діагностики -- у ТОМУ САМОМУ рядку: без нього «чому в лозі
+        // немає squelch» не має відповіді, яку видно.
+        got += ", debug log = " + p.param5.ToString();
         OZR_Log.Info(got);
     }
 

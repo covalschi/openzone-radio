@@ -183,11 +183,29 @@ class OZR_EtherServer
         // порівнював їх із нулем назад -- при тому, що поруч, у пакеті PTT,
         // той самий модуль возить Param2<bool, bool>. Дві різні мови для
         // одного типу в одному файлі -- це запрошення переплутати.
+        //
+        // П'ЯТИМ ПОЛЕМ ЇДЕ РІВЕНЬ ДІАГНОСТИКИ, і без нього клієнтського лога
+        // в цього мода не було ЗОВСІМ. OZR_Log.SetDebug кличеться рівно двічі
+        // (OZR_Settings.ServerLoad і OZRP_Module.OnMissionStart), і обидва
+        // рази під if (IsServer()) -- отже на клієнті прапорець лишався false
+        // назавжди, а кожен OZR_Log.Dbg там був мертвим рядком. Саме на цьому
+        // боці й живуть сплески squelch, тобто пояснити пропущене клацання
+        // було нічим.
+        //
+        // Тим самим пакетом, а не своїм: питання те саме -- «що цей сервер
+        // про себе каже», -- і другий пакет означав би другий шлях, який може
+        // не доїхати окремо.
+        //
+        // Береться ЖИВИЙ прапорець логера, а не поле st.DebugLog: коли поруч
+        // стоїть ядро, склейка @OpenZone_Radio_PDA переставляє наш рівень за
+        // ядерним (OZRP_Module.OnMissionStart), і саме за переставленим
+        // сервер пише. Клієнт мусить мовчати чи говорити разом із ним, а не
+        // за іншим числом.
         OZR_Settings st = OZR_Settings.Get();
         if (st)
         {
             GetRPCManager().SendRPC(OZR_Const.MOD, OZR_Const.RPC_AUDIO_RES,
-                new Param4<float, bool, int, bool>(st.SquelchGain, st.MirrorPtt, st.SquelchRange, st.PttFromCargo),
+                new Param5<float, bool, int, bool, bool>(st.SquelchGain, st.MirrorPtt, st.SquelchRange, st.PttFromCargo, OZR_Log.IsDebug()),
                 true, who);
         }
 
