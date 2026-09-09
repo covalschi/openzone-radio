@@ -17,11 +17,15 @@ modded class MissionGameplay
         OZ_PdaPageFactory.Letter(OZRP_Const.PAGE_RADIO, "R");
 
         // Свій значок і свій підпис -- тими самими входами й з тієї ж
-        // причини. Набір oz_pda_icons уже несе tab_radio, але КПК не має
-        // права роздавати спрайти сторінкам, яких у ньому немає: без цих
-        // двох рядків вкладка малювалась запасним "tab_page", а підписом
-        // їй лишалась сама літера рейки.
-        OZ_PdaPageFactory.Sprite(OZRP_Const.PAGE_RADIO, "tab_radio");
+        // причини. Без цих двох рядків вкладка малювалась запасним
+        // "tab_page", а підписом їй лишалась сама літера рейки.
+        //
+        // ЗНАЧОК -- ІЗ НАШОГО НАБОРУ, повним посиланням (рішення власника
+        // 2026-09-09). Тут стояло голе "tab_radio", тобто спрайт з атласа
+        // КПК: щоб рація мала вкладку зі своїм значком, КПК мусив везти
+        // картинку рації. Тепер набір їде разом із цим pbo (config.cpp,
+        // class imageSets), а КПК не знає про нього нічого, крім рядка.
+        OZ_PdaPageFactory.Sprite(OZRP_Const.PAGE_RADIO, "set:oz_radio_icons image:tab_radio");
         OZ_PdaPageFactory.Caption(OZRP_Const.PAGE_RADIO, "#STR_OZR_PAGE_RADIO");
     }
 }
