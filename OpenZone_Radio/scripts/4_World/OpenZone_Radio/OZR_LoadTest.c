@@ -151,6 +151,7 @@ class OZR_LoadTest
 
         int grid = OZR_Grid.Count();
         int lit = 0;
+        int powered = 0;
 
         for (int i = 0; i < n; i++)
         {
@@ -178,20 +179,30 @@ class OZR_LoadTest
                 idx = i % grid;
             radio.SetFrequencyByIndex(idx);
 
+            // A battery, put in by hand: the vanilla class adds one only in
+            // OnDebugSpawn (the Workbench path), and a radio spawned by script
+            // arrives empty -- which players see as sixty dead radios. Measured
+            // 2026-09-12 on the stand.
+            radio.GetInventory().CreateAttachment("Battery9V");
+
             ComponentEnergyManager em = radio.GetCompEM();
             if (em)
                 em.SwitchOn();
+            if (em && em.IsWorking())
+                powered++;
 
             // Said explicitly rather than trusted to OnWorkStart: a class the
             // admin listed in the profiles would have had its air shut by this
-            // mod, and a silent radio loads nothing.
+            // mod, and a silent radio loads nothing. The engine's router reads
+            // this flag, not the power -- both are reported so a dead radio
+            // that still counts for the engine is visible as such.
             radio.EnableBroadcast(true);
             if (radio.IsBroadcasting())
                 lit++;
         }
 
         string said = "load: " + s_Spawned.Count().ToString() + " " + OZR_Const.BAND_PROBE_CLASS;
-        said += " spawned at " + at.ToString() + ", " + lit.ToString() + " broadcasting";
+        said += " spawned at " + at.ToString() + ", " + powered.ToString() + " powered, " + lit.ToString() + " broadcasting";
         int distinct = n;
         if (grid > 0 && grid < distinct)
             distinct = grid;

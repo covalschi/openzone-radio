@@ -50,8 +50,17 @@ $CONTEXT_SIZE = 1232
 $RIP_OFFSET = 0xF8
 
 if ($ProcessIdToSample -eq 0) {
-    $p = Get-CimInstance Win32_Process -Filter "Name='$Exe'" | Select-Object -First 1
-    if (-not $p) { throw "$Exe is not running; pass -ProcessIdToSample, or -Exe DayZDiag_x64.exe for a diag stand" }
+    # On a diag stand the client and the server are the same executable, and
+    # both may be running on the box that hosts the stand. Prefer the one
+    # launched with -server; it is the only one that is a server. Measured the
+    # hard way 2026-09-12: two minutes of a client profile, read as the server's.
+    $all = @(Get-CimInstance Win32_Process -Filter "Name='$Exe'")
+    if ($all.Count -eq 0) { throw "$Exe is not running; pass -ProcessIdToSample, or -Exe DayZDiag_x64.exe for a diag stand" }
+    $p = $all | Where-Object { $_.CommandLine -match '(^|\s)-server(\s|$)' } | Select-Object -First 1
+    if (-not $p) { $p = $all | Select-Object -First 1 }
+    if ($all.Count -gt 1) {
+        Write-Host ("{0} processes named {1}; sampling pid {2} ({3})" -f $all.Count, $Exe, $p.ProcessId, ($(if ($p.CommandLine -match '-server') { 'launched with -server' } else { 'no -server found - pass -ProcessIdToSample if this is wrong' })))
+    }
     $ProcessIdToSample = [int]$p.ProcessId
 }
 
