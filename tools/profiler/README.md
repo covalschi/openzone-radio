@@ -62,6 +62,11 @@ The `--exe` must be **the same build** that produced the samples. A game update
 moves every function, and resolving against the wrong binary produces confident
 nonsense rather than an error.
 
+On a **diag** stand the server is `DayZDiag_x64.exe`, a different binary with its
+own addresses: collect with `-Exe DayZDiag_x64.exe` and resolve with
+`--exe .../DayZDiag_x64.exe`. The hand-named functions in `KNOWN` are retail
+addresses and will not apply there; the ranges from `.pdata` still do.
+
 ### All on one machine
 
 If the box running the server also has Python, skip the CSV:

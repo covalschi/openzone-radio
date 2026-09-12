@@ -21,7 +21,10 @@ param(
     [int]$ProcessIdToSample = 0,
     [double]$Seconds = 30,
     [double]$Hz = 200,
-    [string]$Out = "von-samples.csv"
+    [string]$Out = "von-samples.csv",
+    # The server executable's file name: DayZServer_x64.exe for a retail stand,
+    # DayZDiag_x64.exe for a diag one. Resolve the CSV against the same file.
+    [string]$Exe = "DayZServer_x64.exe"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -47,14 +50,14 @@ $CONTEXT_SIZE = 1232
 $RIP_OFFSET = 0xF8
 
 if ($ProcessIdToSample -eq 0) {
-    $p = Get-CimInstance Win32_Process -Filter "Name='DayZServer_x64.exe'" | Select-Object -First 1
-    if (-not $p) { throw "DayZServer_x64.exe is not running; pass -ProcessIdToSample" }
+    $p = Get-CimInstance Win32_Process -Filter "Name='$Exe'" | Select-Object -First 1
+    if (-not $p) { throw "$Exe is not running; pass -ProcessIdToSample, or -Exe DayZDiag_x64.exe for a diag stand" }
     $ProcessIdToSample = [int]$p.ProcessId
 }
 
 $proc = Get-Process -Id $ProcessIdToSample
-$mainModule = $proc.Modules | Where-Object { $_.ModuleName -eq 'DayZServer_x64.exe' } | Select-Object -First 1
-if (-not $mainModule) { throw "cannot read the modules of pid $ProcessIdToSample (run as the same user, or elevated)" }
+$mainModule = $proc.Modules | Where-Object { $_.ModuleName -eq $Exe } | Select-Object -First 1
+if (-not $mainModule) { throw "cannot read the modules of pid $ProcessIdToSample (run as the same user, or elevated), or it is not $Exe" }
 $exeBase = [uint64]$mainModule.BaseAddress.ToInt64()
 
 # Every loaded module, so a sample inside ntdll or hid.dll is attributed
@@ -69,7 +72,7 @@ foreach ($m in $proc.Modules) {
 }
 $mods = $mods | Sort-Object Start
 
-Write-Host ("pid {0}, DayZServer_x64.exe at 0x{1:X}, {2} modules" -f $ProcessIdToSample, $exeBase, $mods.Count)
+Write-Host ("pid {0}, {1} at 0x{2:X}, {3} modules" -f $ProcessIdToSample, $Exe, $exeBase, $mods.Count)
 
 # CONTEXT must be 16-byte aligned.
 $raw = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($CONTEXT_SIZE + 16)
@@ -105,7 +108,7 @@ while ((Get-Date) -lt $deadline) {
         foreach ($m in $mods) {
             if ($rip -ge $m.Start -and $rip -lt $m.End) { $where = $m.Name; break }
         }
-        if ($where -eq 'DayZServer_x64.exe') {
+        if ($where -eq $Exe) {
             $key = "{0},exe,0x{1:X}" -f $tid, ($rip - $exeBase)
         } else {
             $key = "{0},module,{1}" -f $tid, $where
