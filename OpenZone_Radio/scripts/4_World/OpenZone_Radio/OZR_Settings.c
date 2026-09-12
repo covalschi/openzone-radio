@@ -1,4 +1,4 @@
-// Власні налаштування мода рації -- п'ять полів, і всі свої.
+// Власні налаштування мода рації -- сім полів, і всі свої.
 //
 // Окремий файл заведений тому, що рація більше не читає нічиїх конфігів.
 // Раніше рівень діагностики приходив із ядра (Settings.Debug), і один вимикач
@@ -54,6 +54,15 @@ class OZR_Settings : OZR_ConfigBase
     // слот, потім рюкзак. Говорить однаково одна рація.
     bool PttFromCargo = true;
 
+    // Дебаг-режим лагів. `Profiler` вмикає лічильники OZR_Meter і
+    // самоперевірку на старті в OZR_LoadTest; `ProfilerRadios` понад нуль
+    // ще й ставить стільки живлених ванільних рацій поруч із першим гравцем
+    // онлайн -- ЛИШЕ ДЛЯ СТЕНДІВ, і нічого не робить, поки перший вимкнений.
+    // Обидва за умовчанням вимкнені; вимкнений коштує одне читання bool на
+    // кожен підрахований виклик. На клієнт не їдуть -- це серверний облік.
+    bool Profiler = false;
+    int  ProfilerRadios = 0;
+
     private static ref OZR_Settings s_Inst;
 
     static OZR_Settings Get()
@@ -74,10 +83,12 @@ class OZR_Settings : OZR_ConfigBase
         MirrorPtt   = true;
         SquelchRange = OZR_Const.SQUELCH_RANGE_DEFAULT;
         PttFromCargo = true;
+        Profiler = false;
+        ProfilerRadios = 0;
     }
 
     // ВКЛАДЕНИХ ОБ'ЄКТІВ ТУТ НЕМАЄ ЖОДНОГО, і саме тому Validate цей клас не
-    // перевизначає: пересаджувати нема чого. П'ять полів -- скаляри на самому
+    // перевизначає: пересаджувати нема чого. Сім полів -- скаляри на самому
     // корені, а корінь ServerLoad створює власним `new`.
     //
     // ТУТ СТОЯЛО, ЩО КЛЮЧ, ЯКОГО НЕМАЄ В ФАЙЛІ, ЗАСТИГАЄ НУЛЕМ. Це неправда, і
@@ -100,6 +111,8 @@ class OZR_Settings : OZR_ConfigBase
         c.MirrorPtt    = MirrorPtt;
         c.SquelchRange = SquelchRange;
         c.PttFromCargo = PttFromCargo;
+        c.Profiler       = Profiler;
+        c.ProfilerRadios = ProfilerRadios;
         return c;
     }
 
@@ -110,5 +123,6 @@ class OZR_Settings : OZR_ConfigBase
 
         s_Inst = loaded.Copy();
         OZR_Log.SetDebug(s_Inst.DebugLog);
+        OZR_Meter.SetOn(s_Inst.Profiler);
     }
 }

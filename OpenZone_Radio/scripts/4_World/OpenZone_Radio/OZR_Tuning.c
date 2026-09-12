@@ -297,6 +297,8 @@ modded class TransmitterBase
         if (!OZR_IsPowered())
             return;
 
+        OZR_Meter.Hit(OZR_Meter.KNOB);
+
         OZR_RadioProfile p = OZR_Profiles.For(GetType());
 
         // Не наша рація, або сітка не годиться для профілів (непропатчений
@@ -322,6 +324,16 @@ modded class TransmitterBase
         if (!GetGame() || !GetGame().IsServer())
             return;
 
+        // Міряється з кінця в кінець для дебаг-режиму лагів; тіло незмінне.
+        // Саме цей шлях коштував 1.8 мс на рацію до 2026-09-06, і саме тут
+        // лічильник каже, скільки раз на хвилину він біжить на живому сервері.
+        int mt = OZR_Meter.Begin();
+        OZR_InitBand();
+        OZR_Meter.End(OZR_Meter.EEINIT, mt);
+    }
+
+    private void OZR_InitBand()
+    {
         OZR_RadioProfile p = OZR_Profiles.For(GetType());
         int lo;
         int hi;
@@ -422,6 +434,8 @@ modded class TransmitterBase
         if (!super.OnStoreLoad(ctx, version))
             return false;
 
+        OZR_Meter.Hit(OZR_Meter.STORE);
+
         // ЩО САМЕ ПОВЕРНУВ РУШІЙ -- одним рядком, і цей рядок помирив два
         // документи, які казали різне.
         //
@@ -514,6 +528,8 @@ modded class TransmitterBase
         if (!GetGame() || !GetGame().IsServer())
             return;
 
+        OZR_Meter.Hit(OZR_Meter.WORK_ON);
+
         if (OZR_Profiles.For(GetType()))
         {
             EnableBroadcast(false);
@@ -550,6 +566,8 @@ modded class TransmitterBase
         if (!GetGame() || !GetGame().IsServer())
             return;
 
+        OZR_Meter.Hit(OZR_Meter.WORK_OFF);
+
         OZR_PublishAir(false);
         m_OZR_Latched = false;
     }
@@ -563,6 +581,8 @@ modded class TransmitterBase
     // це "false", і лічильник у OZR_SetAll рахує саме це, а не сам вибір.
     bool OZR_SetSpeaking(bool on, bool locked)
     {
+        OZR_Meter.Hit(OZR_Meter.SPEAK);
+
         if (!OZR_IsPowered())
         {
             EnableBroadcast(false);

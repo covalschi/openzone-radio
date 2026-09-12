@@ -62,6 +62,14 @@ class OZR_Module : CF_ModuleWorld
     // і лише поки сітки немає. Тому запас великий.
     private static const int   PULL_TRIES    = 60;
 
+    // Таймери дебаг-режиму лагів; див. OZR_Meter і OZR_LoadTest. Заводяться
+    // лише коли Profiler увімкнено, тож вимкнений режим не має навіть таймера.
+    private ref Timer m_MeterTimer;
+    private ref Timer m_LoadTimer;
+    private int m_LoadRadios = 0;
+    private static const float METER_INTERVAL = 60.0;
+    private static const float LOAD_INTERVAL  = 15.0;
+
     override void OnMissionStart(Class sender, CF_EventArgs args)
     {
         super.OnMissionStart(sender, args);
@@ -116,6 +124,24 @@ class OZR_Module : CF_ModuleWorld
         string summary = "radio loaded: bands=" + OZR_Bands.Count().ToString();
         summary += " profiles=" + profiles.ToString();
         OZR_Log.Info(summary);
+
+        // Дебаг-режим лагів -- ПІСЛЯ рядка готовності, щоб вердикт стенда не
+        // чекав два мільйони викликів самоперевірки.
+        OZR_Settings st = OZR_Settings.Get();
+        if (st && st.Profiler)
+        {
+            OZR_LoadTest.SelfCheck();
+
+            m_MeterTimer = new Timer(CALL_CATEGORY_SYSTEM);
+            m_MeterTimer.Run(METER_INTERVAL, this, "MeterTick", NULL, true);
+
+            if (st.ProfilerRadios > 0)
+            {
+                m_LoadRadios = st.ProfilerRadios;
+                m_LoadTimer = new Timer(CALL_CATEGORY_SYSTEM);
+                m_LoadTimer.Run(LOAD_INTERVAL, this, "LoadTick", NULL, true);
+            }
+        }
     }
 
     override void OnMissionFinish(Class sender, CF_EventArgs args)
@@ -124,6 +150,32 @@ class OZR_Module : CF_ModuleWorld
 
         if (m_PullTimer)
             m_PullTimer.Stop();
+        if (m_MeterTimer)
+            m_MeterTimer.Stop();
+        if (m_LoadTimer)
+            m_LoadTimer.Stop();
+
+        // Рації-підсилювачі не переживають місію: інакше стенд, який падає
+        // замість зупинки, лишав би їх на землі до наступного разу.
+        OZR_LoadTest.Clear();
+    }
+
+    // Один рядок на хвилину, поки Profiler увімкнено. Кличеться таймером
+    // за ім'ям, тому не private.
+    void MeterTick()
+    {
+        array<Man> players = new array<Man>();
+        GetGame().GetPlayers(players);
+        OZR_Log.Info(OZR_Meter.Report(players.Count()));
+    }
+
+    // Питає, доки є поруч із ким ставити, потім зупиняє себе.
+    void LoadTick()
+    {
+        if (!OZR_LoadTest.SpawnRadios(m_LoadRadios))
+            return;
+        if (m_LoadTimer)
+            m_LoadTimer.Stop();
     }
 
     // Просимо сітку, поки не отримаємо. Спроби скінченні: якщо сервер не
@@ -181,6 +233,10 @@ class OZR_Module : CF_ModuleWorld
         if (type != CallType.Server || !sender)
             return;
 
+        // Рахуємо ПРИХІД, а не пропуск через межу: дріт навантажує кожен
+        // пакет, і саме їх треба бачити в лічильнику.
+        OZR_Meter.Hit(OZR_Meter.GRID);
+
         if (!OZR_Throttle.Allow(sender, "grid"))
             return;
 
@@ -203,6 +259,14 @@ class OZR_Module : CF_ModuleWorld
         if (type != CallType.Server || !sender)
             return;
 
+        // Міряється з кінця в кінець для дебаг-режиму лагів; тіло незмінне.
+        int mt = OZR_Meter.Begin();
+        OZR_TuneReqBody(ctx, sender);
+        OZR_Meter.End(OZR_Meter.TUNE, mt);
+    }
+
+    private void OZR_TuneReqBody(ParamsReadContext ctx, PlayerIdentity sender)
+    {
         Param1<int> p = new Param1<int>(0);
         if (!ctx.Read(p))
             return;
@@ -307,6 +371,14 @@ class OZR_Module : CF_ModuleWorld
         if (type != CallType.Server || !sender)
             return;
 
+        // Міряється з кінця в кінець для дебаг-режиму лагів; тіло незмінне.
+        int mt = OZR_Meter.Begin();
+        OZR_PttRadioBody(ctx, sender);
+        OZR_Meter.End(OZR_Meter.PTT, mt);
+    }
+
+    private void OZR_PttRadioBody(ParamsReadContext ctx, PlayerIdentity sender)
+    {
         Param2<bool, bool> p = new Param2<bool, bool>(false, false);
         if (!ctx.Read(p))
             return;

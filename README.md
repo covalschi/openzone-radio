@@ -180,6 +180,8 @@ its log rather than leaving the delay to be discovered.
 | `SquelchRange` | How far it is heard, in metres. `15` by default |
 | `MirrorPtt` | Adds your push-to-talk key as a second binding on the game's voice key, so one press does both. `true` by default |
 | `PttFromCargo` | Whether a radio in a backpack may speak. `true` by default |
+| `Profiler` | The lag debug mode: counts how often this mod's paths fire, one log line a minute, plus a self-check at start. `false` by default, and off costs nothing |
+| `ProfilerRadios` | Test stands only. With `Profiler` on, spawns this many powered vanilla radios on distinct frequencies next to the first player online, to load the engine's voice routing the way a full server does. `0` by default |
 
 `SquelchRange` moves in **steps** — 5, 10, 15, 20, 25 — and the nearest one is
 taken; ask for 13 and you get 15, and the log says so rather than leaving you to
@@ -189,7 +191,7 @@ sound sets let a mod change volume at runtime but fix the radius in config, whil
 Keeping the sets means keeping the sound; the radius then comes from picking
 among prepared ones.
 
-All four are read when the server starts and travel to each client on connect, so a
+The first four are read when the server starts and travel to each client on connect, so a
 change needs a server restart. Moving `SquelchRange` between steps needs nothing from
 players — the sets are already in their copy of the mod, and the server only names the
 one to use.
