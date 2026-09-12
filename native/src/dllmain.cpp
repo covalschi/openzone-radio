@@ -27,7 +27,11 @@ struct Config
     int    count;   // how many channels exist; indices wrap within this
 };
 
-static Config g_config = { 87.8, 0.2, 64 };
+// The same three numbers as the mod's built-in radio profiles derive
+// (OZR_Profiles.LoadDefaults) and as native/oz_frequencies.json carries: one
+// band for every radio, 136.000..155.950 MHz in steps of 0.050, 400 channels.
+// Three copies of one default; change them together.
+static Config g_config = { 136.0, 0.05, 400 };
 static wchar_t g_dir[MAX_PATH] = L"";
 
 // The server's -profiles directory, or empty when it named none.

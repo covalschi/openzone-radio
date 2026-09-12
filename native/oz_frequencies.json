@@ -1,5 +1,5 @@
 {
   "base_mhz": 136.0,
-  "step_mhz": 0.0125,
-  "count": 1281
+  "step_mhz": 0.05,
+  "count": 400
 }

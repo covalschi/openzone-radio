@@ -133,8 +133,14 @@ and the greatest common divisor of every step and every offset. `oz_frequencies.
 beside the DLL is the fallback, read only when the profile file is missing:
 
 ```json
-{ "base_mhz": 136.0, "step_mhz": 0.0125, "count": 1281 }
+{ "base_mhz": 136.0, "step_mhz": 0.05, "count": 400 }
 ```
+
+That is the default ether: every radio the mod ships shares one band, 136.000 to
+155.950 MHz in steps of 0.050 — 400 channels — and the tiers differ by range, not by
+frequency. An admin's own `OZ_Radio_Profiles.json` overrides it, and a server that
+already has one keeps it: a new default changes nothing on a server whose admin has
+written the file.
 
 Either way the patch reads it at PROCESS start, so a new ether takes effect on the
 next server launch, not on the edit.

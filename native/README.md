@@ -80,11 +80,16 @@ Either file holds the same three numbers:
 
 ```json
 {
-  "base_mhz": 87.8,
-  "step_mhz": 0.2,
-  "count": 64
+  "base_mhz": 136.0,
+  "step_mhz": 0.05,
+  "count": 400
 }
 ```
+
+Those are also the numbers the mod's built-in radio profiles derive when an admin
+has described none, and the ones compiled into the DLL as the last fallback: one
+band for every radio, 400 channels. Three copies of one default; they change
+together.
 
 Read once, at process start, because that is when the patch is applied: a change
 takes effect on the NEXT server start, and the mod says so in its own log rather
